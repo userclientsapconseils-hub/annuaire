@@ -12,16 +12,30 @@
     <header class="nav">
       <div class="nav-left">
         <div class="brand">
-          <svg class="pin" viewBox="0 0 24 24"><path d="M12 2c-3.86 0-7 3.14-7 7 0 5.25 7 13 7 13s7-7.75 7-13c0-3.86-3.14-7-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/></svg>
-          Real Estate
+          <svg class="pin" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 2c-3.86 0-7 3.14-7 7 0 5.25 7 13 7 13s7-7.75 7-13c0-3.86-3.14-7-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/>
+          </svg>
+          <span>Accueil</span>
         </div>
-        <nav class="menu">
+
+        <nav class="menu" aria-label="Menu principal">
           <a href="#">Les Prestations</a>
-          <a href="#">-</a>
+          <a href="../submit/submitindex.html">Annonce</a>
         </nav>
       </div>
+
       <div class="nav-right">
-        <button class="btn-primary">+ Annonce</button>
+        <a href="#">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" style="fill:rgba(255,255,255,.85)">
+            <path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4zm0 2c-4.42 0-8 2-8 4.5V21h16v-2.5C20 16 16.42 14 12 14z"/>
+          </svg>
+          <span>Connexion</span>
+        </a>
+
+        <a class="btn btn-primary" href="annonceindex.html">
+          <span aria-hidden="true">+</span>
+          <span>Annonce</span>
+        </a>
       </div>
     </header>
 
@@ -31,6 +45,7 @@
           <div class="gallery"></div>
 
           <div class="main">
+            <p class="badge">Exemple d’annonce générée depuis le formulaire</p>
             <h1>Nettoyage à domicile — Grenoble & alentours</h1>
 
             <div class="meta">
@@ -40,22 +55,23 @@
             </div>
 
             <p class="desc">
-              Bonjour, je suis <b>Marie Dupont</b>, intervenante spécialisée en nettoyage à domicile.
-              J’interviens sur Grenoble (38000) et plus largement sur le département <b>38</b> selon les demandes
-              (ex : 38100, 38200, 38300…). Prestations ponctuelles ou récurrentes : entretien courant, vitres,
-              remise en état, location courte durée.
+              Bonjour, je suis <b>Marie Dupont</b>, auto-entrepreneure spécialisée en nettoyage à domicile.
+              J’interviens sur Grenoble (38000) et sur tout le département <b>38</b> selon les demandes
+              (38100, 38200, 38300...). Prestations ponctuelles ou récurrentes : entretien courant,
+              vitres, remise en état et préparation de locations courte durée.
             </p>
           </div>
 
           <div class="section">
             <h2>Prestations proposées</h2>
             <ul class="list">
-              <li>Entretien régulier</li>
-              <li>Vitres</li>
-              <li>Grand ménage</li>
-              <li>Locations courte durée</li>
+              <li>Entretien régulier de la maison</li>
+              <li>Nettoyage des vitres</li>
+              <li>Grand ménage de printemps</li>
+              <li>Remise en état entre deux locations</li>
             </ul>
           </div>
+
           <div class="section">
             <h2>Disponibilités</h2>
             <ul class="list">
@@ -71,15 +87,16 @@
             <div class="avatar">MD</div>
             <div>
               <strong>Marie Dupont</strong><br>
-              <small>Entretien Ménager</small>
+              <small>Auto-entrepreneure</small>
             </div>
           </div>
-          <br></br>
-           <div class="kv">
+          <br>
+          <div class="kv">
             <div class="kv-row"><span>Code postal</span><b>38000</b></div>
             <div class="kv-row"><span>Zone couverte</span><b>38**</b></div>
             <div class="kv-row"><span>Expérience</span><b>6 ans</b></div>
-            <div class="kv-row"><span>Déplacement</span><b>Inclus au devis</b></div>
+            <div class="kv-row"><span>Téléphone</span><b>06 12 34 56 78</b></div>
+            <div class="kv-row"><span>Email</span><b>marie.dupont@exemple.fr</b></div>
           </div>
 
           <button class="btn-wide primary">Contacter</button>
@@ -88,6 +105,7 @@
       </div>
     </main>
   </section>
+
   <script src="scripts.js"></script>
 </body>
 </html>
