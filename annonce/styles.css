@@ -57,6 +57,40 @@ body{
 .menu{display:flex; gap:18px}
 .menu a{color:white; text-decoration:none; font-size:14px}
 
+
+.nav-right a{
+  color:rgba(255,255,255,.85);
+  text-decoration:none;
+  font-size:14px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+
+.icon{
+  width:18px;
+  height:18px;
+  display:block;
+}
+
+.btn{
+  border:0;
+  background:transparent;
+  color:white;
+  font-weight:600;
+  font-size:13px;
+  padding:10px 14px;
+  border-radius:6px;
+  cursor:pointer;
+}
+
+.btn-primary{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  text-decoration:none;
+}
+
 .btn-primary{
   background:var(--red);
   color:white;
@@ -95,6 +129,7 @@ body{
 }
 
 .main{padding:18px}
+.badge{margin:0 0 8px;font-size:12px;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:.4px}
 h1{margin:0;font-size:26px}
 .meta{display:flex;flex-wrap:wrap;gap:10px;margin:10px 0}
 
