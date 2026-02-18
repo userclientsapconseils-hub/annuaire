@@ -271,11 +271,20 @@ color:rgba(255,255,255,.9);
 text-shadow:0 8px 24px rgba(0,0,0,.35);
 }
 
+@media (max-width:1024px){
+.headline{font-size:38px}
+.nav{padding:0 20px}
+.nav-left, .nav-right{gap:14px}
+.menu{margin-left:0}
+}
+
 @media (max-width:720px){
+.hero{overflow:auto}
 .headline{font-size:34px}
 .menu{display:none}
 .nav{padding:0 16px}
-.nav-right a{display:none}
+.nav-right a:not(.btn-primary){display:none}
+.btn{padding:9px 12px}
 .searchbar{height:auto; flex-wrap:wrap}
 .field{flex:1 1 100%; border-right:0; border-bottom:1px solid rgba(0,0,0,.08)}
 .field:last-of-type{border-bottom:0}
@@ -284,4 +293,13 @@ text-shadow:0 8px 24px rgba(0,0,0,.35);
 .form-grid, .form-columns{grid-template-columns:1fr}
 .form-submit{width:100%; text-align:center}
 }
-Si tu me dis ce que tu veux changer exactement (ex: “le bouton rouge en bleu”, “menu visible sur mobile”, “fond moins sombre”, “arrondis plus forts”, etc.), je te fais la modif complète + le diff correspondant.
+
+@media (max-width:520px){
+:root{--navH:64px}
+.brand span{font-size:15px}
+.content{padding:calc(var(--navH) + 26px) 14px 42px}
+.headline{font-size:28px}
+.search-wrap{width:min(880px, 100%)}
+.btn-primary span:last-child{display:none}
+.btn-primary{min-width:40px; justify-content:center}
+}

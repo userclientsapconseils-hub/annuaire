@@ -124,6 +124,30 @@ textarea{min-height:100px;resize:vertical}
   color:#111;
   border:1px solid #ddd;
 }
+
+
+@media (max-width:900px){
+  .nav{padding:0 16px;}
+  .container{padding:28px 0 56px;}
+}
+
+@media (max-width:700px){
+  :root{--navH:64px;}
+  .container{width:min(1000px,95vw);}
+  .panel{padding:18px;border-radius:12px;}
+  .grid{grid-template-columns:1fr;gap:12px;}
+  .stepper{gap:10px;}
+  .stepper .line{width:72px;}
+  .actions{justify-content:stretch;flex-wrap:wrap;}
+  .actions .btn{flex:1 1 100%;}
+}
+
+@media (max-width:420px){
+  .stepper .line{width:48px;}
+  .stepper-wrap{padding:8px 10px;}
+  h1{font-size:24px;}
+}
+
 </style>
 </head>
 
