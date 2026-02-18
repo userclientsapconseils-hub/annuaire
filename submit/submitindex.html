@@ -14,6 +14,9 @@
   --stroke:#e5e7eb;
   --shadow:0 18px 45px rgba(0,0,0,.15);
   --navH:72px;
+
+  --blue:#2f6bff;
+  --dotOff:#ffffff;
 }
 *{box-sizing:border-box}
 body{
@@ -72,6 +75,55 @@ textarea{min-height:100px;resize:vertical}
   gap:16px;
 }
 .full{grid-column:1 / -1}
+
+/* --- Stepper --- */
+.stepper{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:14px;
+  margin:6px 0 18px;
+}
+.stepper .dot{
+  width:12px;
+  height:12px;
+  border-radius:999px;
+  background:var(--dotOff);
+  box-shadow:0 0 0 2px rgba(255,255,255,.25) inset;
+}
+.stepper .line{
+  width:120px;
+  height:2px;
+  background:rgba(255,255,255,.55);
+  border-radius:999px;
+}
+.stepper-wrap{
+  background:rgba(11,15,23,.08);
+  border:1px solid rgba(0,0,0,.08);
+  border-radius:14px;
+  padding:10px 12px;
+}
+
+/* dot state */
+.dot.is-on{ background:var(--blue); }
+.dot.is-off{ background:#fff; }
+
+/* Step blocks */
+.step{ display:none; }
+.step.is-active{ display:block; }
+
+/* Footer buttons (optional layout) */
+.actions{
+  display:flex;
+  gap:12px;
+  justify-content:flex-end;
+  margin-top:10px;
+}
+.btn-secondary{
+  background:transparent;
+  color:#111;
+  border:1px solid #ddd;
+}
 </style>
 </head>
 
@@ -85,79 +137,182 @@ textarea{min-height:100px;resize:vertical}
     <div class="panel">
       <h1>Création de votre annonce professionnelle</h1>
 
-      <form>
-
-        <div class="grid">
-
-          <div class="form-group">
-            <label>Nom du professionnel</label>
-            <input type="text" placeholder="Ex : Marie Dupont">
-          </div>
-
-          <div class="form-group">
-            <label>Statut</label>
-            <input type="text" placeholder="Ex : Auto-entrepreneur">
-          </div>
-
-          <div class="form-group">
-            <label>Activité principale</label>
-            <select>
-              <option>Paysagiste</option>
-              <option>Nettoyage</option>
-              <option>Coach sportif</option>
-              <option>Aide à domicile</option>
-              <option>Bricolage</option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label>Code postal principal</label>
-            <input type="text" placeholder="Ex : 38000">
-          </div>
-
-          <div class="form-group">
-            <label>Zone couverte (département)</label>
-            <input type="text" placeholder="Ex : 38">
-          </div>
-
-          <div class="form-group">
-            <label>Tarif horaire à partir de</label>
-            <input type="text" placeholder="Ex : 29 € / h">
-          </div>
-
-          <div class="form-group full">
-            <label>Description de votre activité</label>
-            <textarea placeholder="Présentez votre activité, votre expérience et votre zone d’intervention..."></textarea>
-          </div>
-
-          <div class="form-group full">
-            <label>Prestations proposées</label>
-            <textarea placeholder="Ex : Entretien, vitres, grand ménage, Airbnb... (une par ligne)"></textarea>
-          </div>
-
-          <div class="form-group full">
-            <label>Disponibilités</label>
-            <textarea placeholder="Ex : Lundi - Vendredi 9h / 18h, délai 48h..."></textarea>
-          </div>
-
-          <div class="form-group">
-            <label>Téléphone</label>
-            <input type="tel" placeholder="06 00 00 00 00">
-          </div>
-
-          <div class="form-group">
-            <label>Email</label>
-            <input type="email" placeholder="contact@exemple.fr">
-          </div>
-
+      <!-- Step indicator -->
+      <div class="stepper-wrap">
+        <div class="stepper" aria-label="Progression">
+          <span class="dot" data-dot="1" aria-hidden="true"></span>
+          <span class="line" aria-hidden="true"></span>
+          <span class="dot" data-dot="2" aria-hidden="true"></span>
+          <span class="line" aria-hidden="true"></span>
+          <span class="dot" data-dot="3" aria-hidden="true"></span>
         </div>
+      </div>
 
-        <br>
-        <button class="btn" type="submit">Publier mon annonce</button>
+      <form id="multiStepForm">
+
+        <!-- STEP 1 -->
+        <section class="step is-active" data-step="1">
+          <div class="grid">
+
+            <div class="form-group">
+              <label>Nom du professionnel</label>
+              <input name="nom" type="text" placeholder="Ex : Marie Dupont">
+            </div>
+
+            <div class="form-group">
+              <label>Statut</label>
+              <input name="statut" type="text" placeholder="Ex : Auto-entrepreneur">
+            </div>
+
+            <div class="form-group">
+              <label>Activité principale</label>
+              <select name="activite">
+                <option>Paysagiste</option>
+                <option>Nettoyage</option>
+                <option>Coach sportif</option>
+                <option>Aide à domicile</option>
+                <option>Bricolage</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>Code postal principal</label>
+              <input name="cp" type="text" placeholder="Ex : 38000">
+            </div>
+
+            <div class="form-group">
+              <label>Zone couverte (département)</label>
+              <input name="departement" type="text" placeholder="Ex : 38">
+            </div>
+
+            <div class="form-group">
+              <label>Tarif horaire à partir de</label>
+              <input name="tarif" type="text" placeholder="Ex : 29 € / h">
+            </div>
+
+            <div class="form-group full">
+              <label>Description de votre activité</label>
+              <textarea name="description" placeholder="Présentez votre activité, votre expérience et votre zone d’intervention..."></textarea>
+            </div>
+
+            <div class="form-group full">
+              <label>Prestations proposées</label>
+              <textarea name="prestations" placeholder="Ex : Entretien, vitres, grand ménage, Airbnb... (une par ligne)"></textarea>
+            </div>
+
+            <div class="form-group full">
+              <label>Disponibilités</label>
+              <textarea name="disponibilites" placeholder="Ex : Lundi - Vendredi 9h / 18h, délai 48h..."></textarea>
+            </div>
+
+            <div class="form-group">
+              <label>Téléphone</label>
+              <input name="telephone" type="tel" placeholder="06 00 00 00 00">
+            </div>
+
+            <div class="form-group">
+              <label>Email</label>
+              <input name="email" type="email" placeholder="contact@exemple.fr">
+            </div>
+
+          </div>
+
+          <div class="actions">
+            <button class="btn" type="button" id="nextBtn">Suivant</button>
+          </div>
+        </section>
+
+        <!-- STEP 2 -->
+        <section class="step" data-step="2">
+          <div class="form-group">
+            <label>IBAN</label>
+            <input name="iban" type="text" placeholder="Ex : FR76 3000 6000 0112 3456 7890 189">
+          </div>
+
+          <div class="actions">
+            <button class="btn btn-secondary" type="button" id="prevBtn">Retour</button>
+            <button class="btn" type="button" id="payNextBtn">Suivant</button>
+          </div>
+        </section>
+
+        <!-- STEP 3 -->
+        <section class="step" data-step="3">
+          <div class="actions">
+            <button class="btn" type="button" id="viewAdBtn">Voir mon annonce</button>
+          </div>
+        </section>
 
       </form>
     </div>
   </main>
 </section>
+
+<script>
+(() => {
+  let currentStep = 1;
+
+  const form = document.getElementById('multiStepForm');
+  const steps = Array.from(form.querySelectorAll('.step'));
+  const dots  = Array.from(document.querySelectorAll('.dot[data-dot]'));
+
+  const nextBtn     = document.getElementById('nextBtn');
+  const prevBtn     = document.getElementById('prevBtn');
+  const payNextBtn  = document.getElementById('payNextBtn');
+  const viewAdBtn   = document.getElementById('viewAdBtn');
+
+  // safety: prevent default submit if someone presses Enter
+  form.addEventListener('submit', (e) => e.preventDefault());
+
+  function render() {
+    // show step block
+    steps.forEach(s => {
+      const stepNum = Number(s.getAttribute('data-step'));
+      s.classList.toggle('is-active', stepNum === currentStep);
+    });
+
+    // dot rules per your spec:
+    // step 1: left dot blue
+    // step 2: left + middle white
+    // step 3: all blue
+    dots.forEach(d => d.classList.remove('is-on', 'is-off'));
+
+    if (currentStep === 1) {
+      setDot(1, 'on');
+      setDot(2, 'off');
+      setDot(3, 'off');
+    } else if (currentStep === 2) {
+      setDot(1, 'off');
+      setDot(2, 'off');
+      setDot(3, 'off');
+    } else {
+      setDot(1, 'on');
+      setDot(2, 'on');
+      setDot(3, 'on');
+    }
+  }
+
+  function setDot(n, state) {
+    const el = dots.find(x => Number(x.getAttribute('data-dot')) === n);
+    if (!el) return;
+    el.classList.add(state === 'on' ? 'is-on' : 'is-off');
+  }
+
+  function go(step) {
+    currentStep = Math.min(3, Math.max(1, step));
+    render();
+  }
+
+  nextBtn?.addEventListener('click', () => go(2));
+  prevBtn?.addEventListener('click', () => go(1));
+  payNextBtn?.addEventListener('click', () => go(3));
+
+  viewAdBtn?.addEventListener('click', () => {
+    // Functionalité à définir plus tard
+    alert("Fonction 'Voir mon annonce' à définir.");
+  });
+
+  render();
+})();
+</script>
 </body>
 </html>
