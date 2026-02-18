@@ -1,4 +1,3 @@
-Modifi ce code
 
 :root{
 --red:#e53935;
@@ -285,3 +284,4 @@ text-shadow:0 8px 24px rgba(0,0,0,.35);
 .form-grid, .form-columns{grid-template-columns:1fr}
 .form-submit{width:100%; text-align:center}
 }
+Si tu me dis ce que tu veux changer exactement (ex: “le bouton rouge en bleu”, “menu visible sur mobile”, “fond moins sombre”, “arrondis plus forts”, etc.), je te fais la modif complète + le diff correspondant.
