@@ -171,7 +171,27 @@ h1{margin:0;font-size:26px}
   color:white;
 }
 
+@media (max-width:1100px){
+  .container{width:min(1100px, 96vw)}
+  h1{font-size:23px}
+}
+
 @media (max-width:900px){
+  .nav{padding:0 16px}
   .grid{grid-template-columns:1fr}
   .menu{display:none}
+  .panel{border-radius:14px}
+  .side{order:-1}
+}
+
+@media (max-width:640px){
+  :root{--navH:64px}
+  .container{padding:calc(var(--navH) + 20px) 0 40px}
+  .nav-right a:not(.btn-primary){display:none}
+  .btn-primary span:last-child{display:none}
+  .btn-primary{min-width:40px; justify-content:center}
+  .meta{gap:8px}
+  .pill{font-size:12px}
+  .main,.section,.side{padding:14px}
+  .kv-row{font-size:12px}
 }
