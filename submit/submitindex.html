@@ -37,7 +37,17 @@ body{
   padding:0 28px;
   color:white;
 }
-.brand{display:flex;gap:10px;font-weight:700}
+.nav-left, .nav-right{display:flex; align-items:center; gap:22px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;white-space:nowrap}
+.brand .pin{width:18px;height:18px;fill:var(--red)}
+.brand a{color:#fff;text-decoration:none;}
+.menu{display:flex;align-items:center;gap:18px;margin-left:18px}
+.menu a{color:rgba(255,255,255,.85);text-decoration:none;font-size:14px}
+.menu-toggle{display:none;border:1px solid rgba(255,255,255,.35);background:rgba(10,14,24,.35);color:#fff;width:40px;height:40px;border-radius:10px;align-items:center;justify-content:center;cursor:pointer;}
+.menu-toggle svg{width:20px;height:20px;fill:currentColor}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
+.nav-right a{color:rgba(255,255,255,.85);text-decoration:none;font-size:14px;display:flex;align-items:center;gap:8px;}
+.icon{width:18px;height:18px;display:block;}
 .container{
   width:min(1000px,92vw);
   margin:0 auto;
@@ -61,13 +71,26 @@ input, select, textarea{
 }
 textarea{min-height:100px;resize:vertical}
 .btn{
+  border:0;
+  background:transparent;
+  color:white;
+  font-weight:600;
+  font-size:13px;
+  padding:10px 14px;
+  border-radius:6px;
+  cursor:pointer;
+}
+.btn-primary{
   background:var(--red);
   color:white;
   border:none;
-  padding:12px 18px;
-  border-radius:10px;
-  font-weight:700;
+  padding:10px 14px;
+  border-radius:8px;
+  font-weight:600;
   cursor:pointer;
+  display:flex;
+  align-items:center;
+  gap:8px;
 }
 .grid{
   display:grid;
@@ -119,6 +142,15 @@ textarea{min-height:100px;resize:vertical}
   justify-content:flex-end;
   margin-top:10px;
 }
+.btn-form{
+  background:var(--red);
+  color:white;
+  border:none;
+  padding:12px 18px;
+  border-radius:10px;
+  font-size:14px;
+  font-weight:700;
+}
 .btn-secondary{
   background:transparent;
   color:#111;
@@ -128,18 +160,24 @@ textarea{min-height:100px;resize:vertical}
 
 @media (max-width:900px){
   .nav{padding:0 16px;}
+  .menu-toggle{display:flex;}
+  .menu{display:none;}
+  .nav.menu-open .menu{display:flex;position:absolute;top:calc(var(--navH) - 8px);left:16px;right:16px;background:rgba(10,14,24,.95);border:1px solid rgba(255,255,255,.2);border-radius:12px;flex-direction:column;align-items:flex-start;padding:12px 14px;margin:0;gap:10px;}
   .container{padding:28px 0 56px;}
 }
 
 @media (max-width:700px){
   :root{--navH:64px;}
-  .container{width:min(1000px,95vw);}
+  .container{width:min(1000px,95vw);padding:calc(var(--navH) + 20px) 0 56px;}
   .panel{padding:18px;border-radius:12px;}
   .grid{grid-template-columns:1fr;gap:12px;}
   .stepper{gap:10px;}
   .stepper .line{width:72px;}
   .actions{justify-content:stretch;flex-wrap:wrap;}
-  .actions .btn{flex:1 1 100%;}
+  .actions .btn-form{flex:1 1 100%;}
+  .nav-right a:not(.btn-primary){display:none;}
+  .btn-primary span:last-child{display:none;}
+  .btn-primary{min-width:40px; justify-content:center;}
 }
 
 @media (max-width:420px){
@@ -154,7 +192,40 @@ textarea{min-height:100px;resize:vertical}
 <body>
 <section class="hero">
   <header class="nav">
-    <div class="brand">Créer mon annonce</div>
+    <div class="nav-left">
+      <div class="brand">
+        <svg class="pin" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 2c-3.86 0-7 3.14-7 7 0 5.25 7 13 7 13s7-7.75 7-13c0-3.86-3.14-7-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/>
+        </svg>
+        <a href="../index.html">Accueil</a>
+      </div>
+
+      <nav class="menu" id="mainMenu" aria-label="Menu principal">
+        <a href="../index.html#">Les Prestations</a>
+        <a href="../annonce/annonceindex.html">Annonce</a>
+      </nav>
+    </div>
+
+    <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="mainMenu">
+      <span class="sr-only">Ouvrir le menu</span>
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M3 6h18v2H3V6zm0 5h18v2H3v-2zm0 5h18v2H3v-2z"/>
+      </svg>
+    </button>
+
+    <div class="nav-right">
+      <a href="#">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" style="fill:rgba(255,255,255,.85)">
+          <path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4zm0 2c-4.42 0-8 2-8 4.5V21h16v-2.5C20 16 16.42 14 12 14z"/>
+        </svg>
+        <span>Connexion</span>
+      </a>
+
+      <a class="btn btn-primary" href="submitindex.html">
+        <span aria-hidden="true">+</span>
+        <span>Annonce</span>
+      </a>
+    </div>
   </header>
 
   <main class="container">
@@ -242,7 +313,7 @@ textarea{min-height:100px;resize:vertical}
           </div>
 
           <div class="actions">
-            <button class="btn" type="button" id="nextBtn">Suivant</button>
+            <button class="btn btn-form" type="button" id="nextBtn">Suivant</button>
           </div>
         </section>
 
@@ -254,15 +325,15 @@ textarea{min-height:100px;resize:vertical}
           </div>
 
           <div class="actions">
-            <button class="btn btn-secondary" type="button" id="prevBtn">Retour</button>
-            <button class="btn" type="button" id="payNextBtn">Suivant</button>
+            <button class="btn btn-form btn-secondary" type="button" id="prevBtn">Retour</button>
+            <button class="btn btn-form" type="button" id="payNextBtn">Suivant</button>
           </div>
         </section>
 
         <!-- STEP 3 -->
         <section class="step" data-step="3">
           <div class="actions">
-            <button class="btn" type="button" id="viewAdBtn">Voir mon annonce</button>
+            <button class="btn btn-form" type="button" id="viewAdBtn">Voir mon annonce</button>
           </div>
         </section>
 
@@ -329,6 +400,31 @@ textarea{min-height:100px;resize:vertical}
   nextBtn?.addEventListener('click', () => go(2));
   prevBtn?.addEventListener('click', () => go(1));
   payNextBtn?.addEventListener('click', () => go(3));
+
+  const nav = document.querySelector('.nav');
+  const menuToggle = document.querySelector('.menu-toggle');
+  const menuLinks = document.querySelectorAll('.menu a');
+
+  if (nav && menuToggle) {
+    menuToggle.addEventListener('click', () => {
+      const isOpen = nav.classList.toggle('menu-open');
+      menuToggle.setAttribute('aria-expanded', String(isOpen));
+    });
+
+    menuLinks.forEach((link) => {
+      link.addEventListener('click', () => {
+        nav.classList.remove('menu-open');
+        menuToggle.setAttribute('aria-expanded', 'false');
+      });
+    });
+
+    window.addEventListener('resize', () => {
+      if (window.innerWidth > 900) {
+        nav.classList.remove('menu-open');
+        menuToggle.setAttribute('aria-expanded', 'false');
+      }
+    });
+  }
 
   viewAdBtn?.addEventListener('click', () => {
     // Functionalité à définir plus tard
