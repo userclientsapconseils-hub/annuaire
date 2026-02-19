@@ -59,6 +59,11 @@ body{
   box-shadow:var(--shadow);
   padding:24px;
 }
+.panel-shell{
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+}
 h1{margin-top:0}
 .form-group{margin-bottom:16px}
 label{font-weight:600;display:block;margin-bottom:6px}
@@ -229,9 +234,7 @@ textarea{min-height:100px;resize:vertical}
   </header>
 
   <main class="container">
-    <div class="panel">
-      <h1>Création de votre annonce professionnelle</h1>
-
+    <div class="panel-shell">
       <!-- Step indicator -->
       <div class="stepper-wrap">
         <div class="stepper" aria-label="Progression">
@@ -243,7 +246,10 @@ textarea{min-height:100px;resize:vertical}
         </div>
       </div>
 
-      <form id="multiStepForm">
+      <div class="panel">
+        <h1>Création de votre annonce professionnelle</h1>
+
+        <form id="multiStepForm">
 
         <!-- STEP 1 -->
         <section class="step is-active" data-step="1">
@@ -337,7 +343,8 @@ textarea{min-height:100px;resize:vertical}
           </div>
         </section>
 
-      </form>
+        </form>
+      </div>
     </div>
   </main>
 </section>
