@@ -1,1 +1,24 @@
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script>
+  async function main(){
+    let url = 'https://de3qg7ntqblkinxmxfhqoisuhi0pckix.lambda-url.eu-west-3.on.aws/' //mongoProd
+    let body = {
+      request:'token',
+      collection:'user',
+      //token:'173492289355',
+      data:{
+        mail:'kevin.espalivet@hotmail.com',
+        password:'coucou',
+        //id:'69b44d8e483b5190763f7197',
+        //'presentation.nom':'SAPStructure',
+        //'presentation.zone':'paca',
+      }
+    }
+    let response = await axios({method:'post', url:url, headers:{}, data:body}).then(response => {return response})
+    console.log(response.data)
+  }
+</script>
 
+<div id='api'>
+  <div style="background:blue; color:white">lancer</div>
+</div>
