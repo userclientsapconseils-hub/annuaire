@@ -9,16 +9,15 @@
       data:{
         mail:'kevin.espalivet@hotmail.com',
         password:'coucou',
-        //id:'69b44d8e483b5190763f7197',
-        //'presentation.nom':'SAPStructure',
-        //'presentation.zone':'paca',
       }
     }
     let response = await axios({method:'post', url:url, headers:{}, data:body}).then(response => {return response})
     console.log(response.data)
+    document.getElementById('resultat').innerHTML = JSON.stringify(response.data)
   }
 </script>
 
 <div id='api'>
-  <div style="background:blue; color:white">lancer</div>
+  <div style="background:blue; color:white" onClick='main()'>lancer</div>
+  <div id='resultat>Resultat</div>
 </div>
