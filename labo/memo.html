@@ -19,19 +19,19 @@
   async function request(){
     try{
       console.log('request')
-      console.log(document.getElementById('request').value)
+      console.log(await document.getElementById('request').value)
     }catch(e){}
     try{
       console.log('collection')
-      console.log(document.getElementById('collection').value)
+      console.log(await document.getElementById('collection').value)
     }catch(e){}
     try{
       console.log('token')
-      console.log(document.getElementById('token').value)
+      console.log(await document.getElementById('token').value)
     }catch(e){}
     try{
       console.log('filter')
-      console.log(document.getElementById('filter').value)
+      console.log(await document.getElementById('filter').value)
     }catch(e){}
     
     let url = 'https://de3qg7ntqblkinxmxfhqoisuhi0pckix.lambda-url.eu-west-3.on.aws/' //mongoProd
