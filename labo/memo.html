@@ -46,7 +46,7 @@
     console.log(body)
     let response = await axios({method:'post', url:url, headers:{}, data:body}).then(response => {return response})
     console.log(response.data)
-    document.getElementById('resultat').value = JSON.stringify(response.data)
+    document.getElementById('resultat').innerHTML = JSON.stringify(response.data)
   }
 </script>
 
