@@ -19,18 +19,15 @@
   async function request(){
     let url = 'https://de3qg7ntqblkinxmxfhqoisuhi0pckix.lambda-url.eu-west-3.on.aws/' //mongoProd
     let body = {
-      request:
-      collection:
+      request:document.getElementById('request').value,
+      collection:document.getElementById('collection').value,
       token:document.getElementById('token').value,
-      data:{
-        mail:document.getElementById('mail').value,
-        password:document.getElementById('password').value,
-      }
+      data:document.getElementById('filter').value
     }
     console.log(body)
     let response = await axios({method:'post', url:url, headers:{}, data:body}).then(response => {return response})
     console.log(response.data)
-    document.getElementById('token').value = JSON.stringify(response.data)
+    document.getElementById('resultat').value = JSON.stringify(response.data)
   }
 </script>
 
