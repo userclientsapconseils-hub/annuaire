@@ -12,7 +12,7 @@
     console.log(body)
     let response = await axios({method:'post', url:url, headers:{}, data:body}).then(response => {return response})
     console.log(response.data)
-    document.getElementById('token').value = JSON.stringify(response.data.data)
+    document.getElementById('token').value = response.data.data
   }
 </script>
 <script>
@@ -40,11 +40,10 @@
   <strong>Identification</strong>
   <div>
     Mail<input id='mail' placeholder='test@yopmail.com'/>
-    Password
-    <input id='password' placeholder='coucou'></input>
+    Password<input id='password' placeholder='coucou'/>
     <input type='submit' onClick='token()'> Connexion </input>
-    => Token <input id='token'></input>
-  </div>
+    => Token <input disabled id='token'></input>
+  </div><br/><br/>
 
   <strong>Request</strong>
   Request type
