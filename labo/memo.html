@@ -12,34 +12,59 @@
     console.log(body)
     let response = await axios({method:'post', url:url, headers:{}, data:body}).then(response => {return response})
     console.log(response.data)
+    document.getElementById('token').value = JSON.stringify(response.data.data)
+  }
+</script>
+<script>
+  async function request(){
+    let url = 'https://de3qg7ntqblkinxmxfhqoisuhi0pckix.lambda-url.eu-west-3.on.aws/' //mongoProd
+    let body = {
+      request:
+      collection:
+      token:document.getElementById('token').value,
+      data:{
+        mail:document.getElementById('mail').value,
+        password:document.getElementById('password').value,
+      }
+    }
+    console.log(body)
+    let response = await axios({method:'post', url:url, headers:{}, data:body}).then(response => {return response})
+    console.log(response.data)
     document.getElementById('token').value = JSON.stringify(response.data)
   }
 </script>
 
+
+
 <div id='api'>
   <strong>Identification</strong>
   <div>
-    Mail
-    <input id='mail'></input>
+    Mail<input id='mail' placeholder='test@yopmail.com'/>
     Password
-    <input id='password'></input>
-    <div style=" margin:20px; padding:10px; text-align:center; background:blue; color:white; cursor:pointer" onClick='token()'>
-      Lancer
-    </div>
+    <input id='password' placeholder='coucou'></input>
+    <input type='submit' onClick='token()'> Connexion </input>
     => Token <input id='token'></input>
   </div>
 
   <strong>Request</strong>
+  Request type
   <select>
     <option value='find'>find</option>
     <option value='insert'>insert</option>
     <option value='update'>update</option>
     <option value='remove'>remove</option>
   </select>
-  filter
+  Collection
+  <select>
+    <option value='publicOffer'>publicOffer</option>
+    <option value='publicAsk'>publicAsk</option>
+    <option value='privateQuote'>privateQuote</option>
+    <option value='user'>user</option>
+  </select>
+  Filter
   <input></input>
-  <div style=" margin:20px; padding:10px; text-align:center; background:blue; color:white; cursor:pointer" onClick='request()'>
-    Lancer
-  </div><br/>
+  <span style=" margin:20px; padding:10px; text-align:center; background:blue; color:white; cursor:pointer" onClick='request()'>
+    Launch
+  </span><br/>
   => Résultat <div id='resultat'></div>
 </div>
