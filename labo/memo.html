@@ -32,15 +32,13 @@
 </script>
 <script>
   async function show(){
-  console.log({
-    mail:document.getElementById('mail').value,
-    password:document.getElementById('password').value,
-    token:document.getElementById('token').value,
-    request:document.getElementById('request').value,
-    collection:document.getElementById('collection').value,
-    filter:document.getElementById('filter').value,
-    resultat:document.getElementById('resultat').value,
-  })
+    let variable = ['mail', 'password', 'token', 'request', 'collection', 'filter', 'resultat']
+    let record=[]
+    for(let v of variable){
+      try{record[v]=document.getElementById(v).value)}
+      catch(e){}
+    }
+    console.log(record)
   }
 </script>
 
