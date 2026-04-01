@@ -15,9 +15,11 @@
     document.getElementById('token').value = response.data.data
   }
 </script>
+
+
 <script>
   async function request(){
-    try{
+    /*try{
       console.log('request')
       console.log(await document.getElementById('request').value)
     }catch(e){}
@@ -32,14 +34,14 @@
     try{
       console.log('filter')
       console.log(await document.getElementById('filter').value)
-    }catch(e){}
+    }catch(e){}*/
     
     let url = 'https://de3qg7ntqblkinxmxfhqoisuhi0pckix.lambda-url.eu-west-3.on.aws/' //mongoProd
     let body = {
       request:document.getElementById('request').value,
       collection:document.getElementById('collection').value,
       token:document.getElementById('token').value,
-      data:document.getElementById('filter').value
+      data:JSON.parse(document.getElementById('filter').value)
     }
     console.log(body)
     let response = await axios({method:'post', url:url, headers:{}, data:body}).then(response => {return response})
@@ -47,17 +49,7 @@
     document.getElementById('resultat').value = JSON.stringify(response.data)
   }
 </script>
-<script>
-  async function show(){
-    let variable = ['mail', 'password', 'token', 'request', 'collection', 'filter', 'resultat']
-    let record={}
-    for(let v of variable){
-      try{record[v]=document.getElementById(v).value)}
-      catch(e){}
-    }
-    console.log(record)
-  }
-</script>
+
 
 
 <div id='api'>
@@ -90,7 +82,4 @@
     Launch
   </span><br/>
   => Résultat <div id='resultat'></div>
-
-  <br/><br/>
-  <input type='submit' onClick='show()'>Show</input>
 </div>
