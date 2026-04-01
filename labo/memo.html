@@ -30,7 +30,19 @@
     document.getElementById('resultat').value = JSON.stringify(response.data)
   }
 </script>
-
+<script>
+  async function show(){
+  console.log({
+    mail:document.getElementById('mail').value,
+    password:document.getElementById('password').value,
+    token:document.getElementById('token').value,
+    request:document.getElementById('request').value,
+    collection:document.getElementById('collection').value,
+    filter:document.getElementById('filter').value,
+    resultat:document.getElementById('resultat').value,
+  })
+  }
+</script>
 
 
 <div id='api'>
@@ -59,8 +71,10 @@
   </select>
   Filter
   <input id='filter'></input>
-  <span style=" margin:20px; padding:10px; text-align:center; background:blue; color:white; cursor:pointer" onClick='request()'>
+  <span style=" margin:20px; padding:10px; font-weight:bold; text-align:center; background:blue; color:white; cursor:pointer" onClick='request()'>
     Launch
   </span><br/>
   => Résultat <div id='resultat'></div>
+
+  <input type='submit' onClick='show()'>Show</input>
 </div>
