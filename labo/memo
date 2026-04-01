@@ -1,1 +1,25 @@
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script>
+  async function request(){
+    let url = 'https://de3qg7ntqblkinxmxfhqoisuhi0pckix.lambda-url.eu-west-3.on.aws/' //mongoProd
+    let body = {
+      request:'token',
+      collection:'user',
+      //token:'173492289355',
+      data:{
+        mail:'test@yopmail.com',
+        password:'coucou',
+      }
+    }
+    let response = await axios({method:'post', url:url, headers:{}, data:body}).then(response => {return response})
+    console.log(response.data)
+    document.getElementById('resultat').innerHTML = JSON.stringify(response.data)
+  }
+</script>
 
+<div id='api'>
+  <div style=" margin:20px; width:200px; text-align:center; background:blue; color:white; cursor:pointer" onClick='request()'>
+    Lancer
+  </div><br/>
+  <div id='resultat'>Resultat</div>
+</div>
