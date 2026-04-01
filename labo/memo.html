@@ -17,6 +17,11 @@
 </script>
 <script>
   async function request(){
+    console.log(document.getElementById('request').value)
+    console.log(document.getElementById('collection').value)
+    console.log(document.getElementById('token').value)
+    console.log(document.getElementById('filter').value)
+    
     let url = 'https://de3qg7ntqblkinxmxfhqoisuhi0pckix.lambda-url.eu-west-3.on.aws/' //mongoProd
     let body = {
       request:document.getElementById('request').value,
@@ -69,7 +74,7 @@
     <option value='user'>user</option>
   </select>
   Filter
-  <input id='filter'></input>
+  <input value='{}' id='filter'></input>
   <span style=" margin:20px; padding:10px; font-weight:bold; text-align:center; background:blue; color:white; cursor:pointer" onClick='request()'>
     Launch
   </span><br/>
