@@ -1,6 +1,6 @@
 <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 <script>
-  async function main(){
+  async function request(){
     let url = 'https://de3qg7ntqblkinxmxfhqoisuhi0pckix.lambda-url.eu-west-3.on.aws/' //mongoProd
     let headers = {
         'Access-Control-Allow-Origin': '*',
@@ -24,7 +24,7 @@
 </script>
 
 <div id='api'>
-  <div style=" margin:50px; width:200px; text-align:center; background:blue; color:white; cursor:pointer" onClick='main()'>
+  <div style=" margin:50px; width:200px; text-align:center; background:blue; color:white; cursor:pointer" onClick='request()'>
     Lancer
   </div><br/>
   <div id='resultat'>Resultat</div>
