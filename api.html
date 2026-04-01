@@ -2,11 +2,6 @@
 <script>
   async function request(){
     let url = 'https://de3qg7ntqblkinxmxfhqoisuhi0pckix.lambda-url.eu-west-3.on.aws/' //mongoProd
-    let headers = {
-        /*'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',*/
-    }
     let body = {
       request:'token',
       collection:'user',
@@ -16,7 +11,7 @@
         password:'coucou',
       }
     }
-    let response = await axios({method:'post', url:url, headers:headers, data:body}).then(response => {return response})
+    let response = await axios({method:'post', url:url, headers:{}, data:body}).then(response => {return response})
     console.log(response.data)
     document.getElementById('resultat').innerHTML = JSON.stringify(response.data)
   }
