@@ -25,6 +25,7 @@
     }
     h1{
       margin-top:0;
+      margin-bottom:10px;
     }
     .top{
       display:flex;
@@ -33,7 +34,22 @@
       gap:20px;
       flex-wrap:wrap;
     }
-    button{
+    p{
+      line-height:1.5;
+    }
+    .info{
+      margin-top:25px;
+      padding:16px;
+      background:#f3f4f6;
+      border-radius:10px;
+    }
+    .actions{
+      display:flex;
+      gap:12px;
+      flex-wrap:wrap;
+      margin-top:25px;
+    }
+    button, .btn-link{
       padding:12px 16px;
       border:none;
       border-radius:8px;
@@ -41,12 +57,68 @@
       color:#fff;
       font-weight:700;
       cursor:pointer;
+      text-decoration:none;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      font-size:14px;
     }
-    .info{
-      margin-top:25px;
-      padding:16px;
-      background:#f3f4f6;
+    .btn-secondary{
+      background:#111827;
+    }
+    .btn-light{
+      background:#e5e7eb;
+      color:#111;
+    }
+    .status{
+      margin-top:20px;
+      padding:14px 16px;
       border-radius:10px;
+      font-size:14px;
+      display:none;
+    }
+    .status.show{
+      display:block;
+    }
+    .status.info{
+      background:#eff6ff;
+      color:#1d4ed8;
+      border:1px solid #bfdbfe;
+    }
+    .status.success{
+      background:#dcfce7;
+      color:#166534;
+      border:1px solid #bbf7d0;
+    }
+    .status.warning{
+      background:#fff7ed;
+      color:#9a3412;
+      border:1px solid #fed7aa;
+    }
+    .label{
+      display:inline-block;
+      margin-top:18px;
+      padding:6px 10px;
+      border-radius:999px;
+      background:#fee2e2;
+      color:#991b1b;
+      font-size:12px;
+      font-weight:700;
+    }
+    @media (max-width:700px){
+      .container{
+        margin:30px auto;
+        padding:16px;
+      }
+      .card{
+        padding:20px;
+      }
+      .actions{
+        flex-direction:column;
+      }
+      button, .btn-link{
+        width:100%;
+      }
     }
   </style>
 </head>
@@ -65,25 +137,88 @@
         <p><strong>Email :</strong> <span id="userEmail"></span></p>
         <p><strong>Token :</strong> <span id="userToken"></span></p>
       </div>
+
+      <span class="label">Annonce professionnelle</span>
+
+      <div id="draftStatus" class="status"></div>
+
+      <div class="actions">
+        <a id="adActionBtn" class="btn-link" href="submitindex.html">Créer mon annonce</a>
+        <button id="deleteDraftBtn" class="btn-light" type="button">Effacer le brouillon</button>
+      </div>
     </div>
   </div>
 
   <script>
     const token = localStorage.getItem("token");
     const userEmail = localStorage.getItem("userEmail");
+    const rawDraft = localStorage.getItem("adDraft");
+
+    const userEmailEl = document.getElementById("userEmail");
+    const userTokenEl = document.getElementById("userToken");
+    const logoutBtn = document.getElementById("logoutBtn");
+    const adActionBtn = document.getElementById("adActionBtn");
+    const deleteDraftBtn = document.getElementById("deleteDraftBtn");
+    const draftStatus = document.getElementById("draftStatus");
 
     if (!token) {
       window.location.href = "connexion.html";
     } else {
-      document.getElementById("userEmail").innerText = userEmail || "Non renseigné";
-      document.getElementById("userToken").innerText = token;
+      userEmailEl.innerText = userEmail || "Non renseigné";
+      userTokenEl.innerText = token;
     }
 
-    document.getElementById("logoutBtn").addEventListener("click", function() {
+    function hasMeaningfulDraft() {
+      if (!rawDraft) return false;
+
+      try {
+        const draft = JSON.parse(rawDraft);
+        return Object.values(draft).some(value => String(value || "").trim() !== "");
+      } catch (error) {
+        console.error("Erreur lecture brouillon :", error);
+        return false;
+      }
+    }
+
+    function showDraftStatus(message, type) {
+      draftStatus.className = "status show " + type;
+      draftStatus.textContent = message;
+    }
+
+    function hideDraftStatus() {
+      draftStatus.className = "status";
+      draftStatus.textContent = "";
+    }
+
+    function refreshDraftUI() {
+      const draftExists = hasMeaningfulDraft();
+
+      if (draftExists) {
+        adActionBtn.textContent = "Reprendre mon annonce";
+        adActionBtn.href = "submitindex.html?resume=1";
+        deleteDraftBtn.style.display = "inline-flex";
+        showDraftStatus("Un brouillon d’annonce a été trouvé. Vous pouvez reprendre là où vous vous êtes arrêté.", "warning");
+      } else {
+        adActionBtn.textContent = "Créer mon annonce";
+        adActionBtn.href = "submitindex.html";
+        deleteDraftBtn.style.display = "none";
+        showDraftStatus("Aucun brouillon trouvé. Vous pouvez créer une nouvelle annonce.", "info");
+      }
+    }
+
+    deleteDraftBtn.addEventListener("click", function() {
+      localStorage.removeItem("adDraft");
+      refreshDraftUI();
+      showDraftStatus("Le brouillon a été supprimé.", "success");
+    });
+
+    logoutBtn.addEventListener("click", function() {
       localStorage.removeItem("token");
       localStorage.removeItem("userEmail");
       window.location.href = "connexion.html";
     });
+
+    refreshDraftUI();
   </script>
 
 </body>
