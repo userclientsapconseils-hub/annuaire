@@ -143,13 +143,15 @@
       <div id="draftStatus" class="status"></div>
 
       <div class="actions">
-        <a id="adActionBtn" class="btn-link" href="submitindex.html">Créer mon annonce</a>
+        <a id="adActionBtn" class="btn-link" href="../submit/submitindex.html">Créer mon annonce</a>
         <button id="deleteDraftBtn" class="btn-light" type="button">Effacer le brouillon</button>
       </div>
     </div>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <script>
+    const API_URL = "https://de3qg7ntqblkinxmxfhqoisuhi0pckix.lambda-url.eu-west-3.on.aws/";
     const token = localStorage.getItem("token");
     const userEmail = localStorage.getItem("userEmail");
     const rawDraft = localStorage.getItem("adDraft");
@@ -161,11 +163,49 @@
     const deleteDraftBtn = document.getElementById("deleteDraftBtn");
     const draftStatus = document.getElementById("draftStatus");
 
-    if (!token) {
-      window.location.href = "connexion.html";
-    } else {
-      userEmailEl.innerText = userEmail || "Non renseigné";
-      userTokenEl.innerText = token;
+    function forceLogout() {
+      localStorage.removeItem("token");
+      localStorage.removeItem("userEmail");
+      window.location.href = "connect.html";
+    }
+
+    async function validateUserSession() {
+      if (!token || !userEmail) return false;
+
+      const body = {
+        request: "find",
+        collection: "user",
+        token: token,
+        data: { mail: userEmail }
+      };
+
+      try {
+        const response = await axios.post(API_URL, body, {
+          headers: { "Content-Type": "application/json" }
+        });
+        const payload = response?.data?.data;
+
+        if (payload === null || payload === undefined) return false;
+
+        if (Array.isArray(payload)) return payload.length > 0;
+        if (typeof payload === "string") {
+          try {
+            const parsed = JSON.parse(payload);
+            if (Array.isArray(parsed)) return parsed.length > 0;
+            if (parsed && typeof parsed === "object") return Object.keys(parsed).length > 0;
+            return false;
+          } catch (error) {
+            return payload.trim() !== "";
+          }
+        }
+
+        if (typeof payload === "object") return Object.keys(payload).length > 0;
+
+        return false;
+      } catch (error) {
+        console.error("Session invalide ou expirée :", error);
+        return false;
+      }
     }
 
     function hasMeaningfulDraft() {
@@ -195,12 +235,12 @@
 
       if (draftExists) {
         adActionBtn.textContent = "Reprendre mon annonce";
-        adActionBtn.href = "submitindex.html?resume=1";
+        adActionBtn.href = "../submit/submitindex.html?resume=1";
         deleteDraftBtn.style.display = "inline-flex";
         showDraftStatus("Un brouillon d’annonce a été trouvé. Vous pouvez reprendre là où vous vous êtes arrêté.", "warning");
       } else {
         adActionBtn.textContent = "Créer mon annonce";
-        adActionBtn.href = "submitindex.html";
+        adActionBtn.href = "../submit/submitindex.html";
         deleteDraftBtn.style.display = "none";
         showDraftStatus("Aucun brouillon trouvé. Vous pouvez créer une nouvelle annonce.", "info");
       }
@@ -213,12 +253,30 @@
     });
 
     logoutBtn.addEventListener("click", function() {
-      localStorage.removeItem("token");
-      localStorage.removeItem("userEmail");
-      window.location.href = "connexion.html";
+      forceLogout();
     });
 
-    refreshDraftUI();
+    async function initDashboard() {
+      userEmailEl.innerText = userEmail || "Non renseigné";
+      userTokenEl.innerText = token || "-";
+      showDraftStatus("Vérification de votre session...", "info");
+      adActionBtn.style.pointerEvents = "none";
+      adActionBtn.style.opacity = "0.6";
+      deleteDraftBtn.disabled = true;
+
+      const isValidSession = await validateUserSession();
+      if (!isValidSession) {
+        forceLogout();
+        return;
+      }
+
+      adActionBtn.style.pointerEvents = "";
+      adActionBtn.style.opacity = "";
+      deleteDraftBtn.disabled = false;
+      refreshDraftUI();
+    }
+
+    initDashboard();
   </script>
 
 </body>
