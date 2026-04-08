@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Espace personnel</title>
+  <style>
+    body{
+      margin:0;
+      font-family:Arial, sans-serif;
+      background:#0b0f17;
+      color:#fff;
+    }
+    .container{
+      max-width:900px;
+      margin:60px auto;
+      padding:20px;
+    }
+    .card{
+      background:#fff;
+      color:#111;
+      border-radius:16px;
+      padding:30px;
+      box-shadow:0 15px 40px rgba(0,0,0,.25);
+    }
+    h1{
+      margin-top:0;
+    }
+    .top{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:20px;
+      flex-wrap:wrap;
+    }
+    button{
+      padding:12px 16px;
+      border:none;
+      border-radius:8px;
+      background:#e53935;
+      color:#fff;
+      font-weight:700;
+      cursor:pointer;
+    }
+    .info{
+      margin-top:25px;
+      padding:16px;
+      background:#f3f4f6;
+      border-radius:10px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <div class="card">
+      <div class="top">
+        <h1>Mon espace personnel</h1>
+        <button id="logoutBtn">Déconnexion</button>
+      </div>
+
+      <p>Bienvenue dans votre espace personnel.</p>
+
+      <div class="info">
+        <p><strong>Email :</strong> <span id="userEmail"></span></p>
+        <p><strong>Token :</strong> <span id="userToken"></span></p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const token = localStorage.getItem("token");
+    const userEmail = localStorage.getItem("userEmail");
+
+    if (!token) {
+      window.location.href = "connexion.html";
+    } else {
+      document.getElementById("userEmail").innerText = userEmail || "Non renseigné";
+      document.getElementById("userToken").innerText = token;
+    }
+
+    document.getElementById("logoutBtn").addEventListener("click", function() {
+      localStorage.removeItem("token");
+      localStorage.removeItem("userEmail");
+      window.location.href = "connexion.html";
+    });
+  </script>
+
+</body>
+</html>
