@@ -201,12 +201,8 @@ textarea{
 .dot.is-on{background:var(--blue)}
 .dot.is-off{background:#fff}
 
-.step{
-  display:none;
-}
-.step.is-active{
-  display:block;
-}
+.step{display:none}
+.step.is-active{display:block}
 
 .helper{
   margin:0 0 20px;
@@ -266,6 +262,15 @@ textarea{
   border-radius:999px;
   font-weight:700;
   margin-bottom:12px;
+}
+.notice{
+  margin-bottom:18px;
+  padding:12px 14px;
+  border-radius:10px;
+  background:#fff7ed;
+  color:#9a3412;
+  border:1px solid #fed7aa;
+  font-size:14px;
 }
 
 @media (max-width:900px){
@@ -375,6 +380,10 @@ textarea{
         <h1>Création de votre annonce professionnelle</h1>
         <p class="helper">Commencez par créer votre compte, puis renseignez les informations de votre annonce.</p>
 
+        <div id="resumeNotice" class="notice" style="display:none;">
+          Un brouillon d’annonce a été retrouvé. Vous pouvez reprendre votre saisie.
+        </div>
+
         <form id="multiStepForm">
 
           <!-- STEP 1 : INSCRIPTION -->
@@ -476,6 +485,7 @@ textarea{
 
             <div class="actions">
               <button class="btn btn-form btn-secondary" type="button" id="backBtn">Retour</button>
+              <button class="btn btn-form btn-secondary" type="button" id="clearDraftBtn">Effacer le brouillon</button>
               <button class="btn btn-form" type="button" id="previewBtn">Voir mon annonce</button>
             </div>
           </section>
@@ -554,6 +564,7 @@ textarea{
   let currentStep = 1;
 
   const API_URL = "https://de3qg7ntqblkinxmxfhqoisuhi0pckix.lambda-url.eu-west-3.on.aws/";
+  const DRAFT_KEY = "adDraft";
   const form = document.getElementById("multiStepForm");
   const steps = Array.from(form.querySelectorAll(".step"));
   const dots = Array.from(document.querySelectorAll(".dot[data-dot]"));
@@ -561,6 +572,7 @@ textarea{
   const registerBtn = document.getElementById("registerBtn");
   const backBtn = document.getElementById("backBtn");
   const previewBtn = document.getElementById("previewBtn");
+  const clearDraftBtn = document.getElementById("clearDraftBtn");
 
   const registerEmail = document.getElementById("registerEmail");
   const registerPassword = document.getElementById("registerPassword");
@@ -568,6 +580,22 @@ textarea{
 
   const statusBox = document.getElementById("statusBox");
   const previewBox = document.getElementById("previewBox");
+  const resumeNotice = document.getElementById("resumeNotice");
+
+  const adFieldIds = [
+    "nom",
+    "statut",
+    "activite",
+    "cp",
+    "departement",
+    "tarif",
+    "description",
+    "prestations",
+    "disponibilites",
+    "telephone",
+    "contactEmail",
+    "iban"
+  ];
 
   form.addEventListener("submit", (e) => e.preventDefault());
 
@@ -607,6 +635,71 @@ textarea{
   function go(step) {
     currentStep = Math.min(2, Math.max(1, step));
     render();
+  }
+
+  function getDraftData() {
+    return {
+      nom: document.getElementById("nom").value.trim(),
+      statut: document.getElementById("statut").value.trim(),
+      activite: document.getElementById("activite").value,
+      cp: document.getElementById("cp").value.trim(),
+      departement: document.getElementById("departement").value.trim(),
+      tarif: document.getElementById("tarif").value.trim(),
+      description: document.getElementById("description").value.trim(),
+      prestations: document.getElementById("prestations").value.trim(),
+      disponibilites: document.getElementById("disponibilites").value.trim(),
+      telephone: document.getElementById("telephone").value.trim(),
+      contactEmail: document.getElementById("contactEmail").value.trim(),
+      iban: document.getElementById("iban").value.trim()
+    };
+  }
+
+  function saveDraft() {
+    const draft = getDraftData();
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+  }
+
+  function loadDraft() {
+    const raw = localStorage.getItem(DRAFT_KEY);
+    if (!raw) return false;
+
+    try {
+      const draft = JSON.parse(raw);
+
+      document.getElementById("nom").value = draft.nom || "";
+      document.getElementById("statut").value = draft.statut || "";
+      document.getElementById("activite").value = draft.activite || "Paysagiste";
+      document.getElementById("cp").value = draft.cp || "";
+      document.getElementById("departement").value = draft.departement || "";
+      document.getElementById("tarif").value = draft.tarif || "";
+      document.getElementById("description").value = draft.description || "";
+      document.getElementById("prestations").value = draft.prestations || "";
+      document.getElementById("disponibilites").value = draft.disponibilites || "";
+      document.getElementById("telephone").value = draft.telephone || "";
+      document.getElementById("contactEmail").value = draft.contactEmail || localStorage.getItem("userEmail") || "";
+      document.getElementById("iban").value = draft.iban || "";
+
+      return true;
+    } catch (error) {
+      console.error("Erreur lecture brouillon :", error);
+      return false;
+    }
+  }
+
+  function clearDraft() {
+    localStorage.removeItem(DRAFT_KEY);
+  }
+
+  function hasMeaningfulDraft() {
+    const raw = localStorage.getItem(DRAFT_KEY);
+    if (!raw) return false;
+
+    try {
+      const draft = JSON.parse(raw);
+      return Object.values(draft).some(value => String(value || "").trim() !== "");
+    } catch {
+      return false;
+    }
   }
 
   async function registerUser() {
@@ -666,6 +759,8 @@ textarea{
       localStorage.setItem("userEmail", email);
       contactEmail.value = email;
 
+      saveDraft();
+
       showStatus("Compte créé avec succès. Vous pouvez maintenant créer votre annonce.", "success");
       go(2);
 
@@ -687,9 +782,11 @@ textarea{
   }
 
   function buildPreview() {
+    saveDraft();
+
     const nom = document.getElementById("nom").value.trim() || "-";
     const statut = document.getElementById("statut").value.trim() || "-";
-    const activite = document.getElementById("activite").value.trim() || "-";
+    const activite = document.getElementById("activite").value || "-";
     const cp = document.getElementById("cp").value.trim();
     const departement = document.getElementById("departement").value.trim();
     const tarif = document.getElementById("tarif").value.trim() || "-";
@@ -722,16 +819,35 @@ textarea{
     document.getElementById("previewIban").textContent = iban;
 
     previewBox.classList.add("show");
-    showStatus("Voici un aperçu de votre annonce. L'envoi de l'annonce à l'API n'est pas encore branché dans ce code.", "info");
+    showStatus("Brouillon sauvegardé. Voici un aperçu de votre annonce.", "info");
+  }
+
+  function bindDraftAutosave() {
+    adFieldIds.forEach((fieldId) => {
+      const field = document.getElementById(fieldId);
+      if (!field) return;
+
+      field.addEventListener("input", saveDraft);
+      field.addEventListener("change", saveDraft);
+    });
   }
 
   registerBtn?.addEventListener("click", registerUser);
+
   backBtn?.addEventListener("click", () => {
     previewBox.classList.remove("show");
     hideStatus();
+    saveDraft();
     go(1);
   });
+
   previewBtn?.addEventListener("click", buildPreview);
+
+  clearDraftBtn?.addEventListener("click", () => {
+    clearDraft();
+    previewBox.classList.remove("show");
+    showStatus("Le brouillon a été effacé.", "success");
+  });
 
   const nav = document.querySelector(".nav");
   const menuToggle = document.querySelector(".menu-toggle");
@@ -759,11 +875,29 @@ textarea{
   }
 
   const savedEmail = localStorage.getItem("userEmail");
+  const savedToken = localStorage.getItem("token");
+  const foundDraft = loadDraft();
+
   if (savedEmail) {
     registerEmail.value = savedEmail;
-    contactEmail.value = savedEmail;
+    if (!contactEmail.value.trim()) {
+      contactEmail.value = savedEmail;
+    }
   }
 
+  if (foundDraft) {
+    resumeNotice.style.display = "block";
+  }
+
+  if (savedToken && savedEmail) {
+    contactEmail.value = savedEmail;
+    if (foundDraft || window.location.search.includes("resume=1")) {
+      go(2);
+      showStatus("Vous êtes connecté. Vous pouvez reprendre votre annonce.", "info");
+    }
+  }
+
+  bindDraftAutosave();
   render();
 })();
 </script>
