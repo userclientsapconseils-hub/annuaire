@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Connexion</title>
+  <style>
+    body{
+      margin:0;
+      font-family:Arial, sans-serif;
+      background:#0b0f17;
+      color:#111;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      min-height:100vh;
+    }
+    .card{
+      background:#fff;
+      padding:30px;
+      border-radius:14px;
+      width:100%;
+      max-width:380px;
+      box-shadow:0 15px 40px rgba(0,0,0,.25);
+    }
+    h1{
+      margin-top:0;
+      font-size:26px;
+    }
+    label{
+      display:block;
+      margin-bottom:6px;
+      font-weight:700;
+    }
+    input{
+      width:100%;
+      padding:12px;
+      margin-bottom:16px;
+      border:1px solid #d1d5db;
+      border-radius:8px;
+      box-sizing:border-box;
+    }
+    button{
+      width:100%;
+      padding:12px;
+      border:none;
+      border-radius:8px;
+      background:#e53935;
+      color:#fff;
+      font-weight:700;
+      cursor:pointer;
+    }
+    button:hover{
+      opacity:.95;
+    }
+    #result{
+      margin-top:16px;
+      font-size:14px;
+    }
+    a{
+      color:#e53935;
+      text-decoration:none;
+    }
+    .bottom{
+      margin-top:16px;
+      font-size:14px;
+      text-align:center;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+    <h1>Connexion</h1>
+
+    <form id="loginForm">
+      <label for="email">Adresse mail</label>
+      <input type="email" id="email" required>
+
+      <label for="password">Mot de passe</label>
+      <input type="password" id="password" required>
+
+      <button type="submit">Se connecter</button>
+    </form>
+
+    <p id="result"></p>
+
+    <div class="bottom">
+      Pas encore inscrit ? <a href="inscription.html">Créer un compte</a>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script>
+    document.getElementById("loginForm").addEventListener("submit", async function(e) {
+      e.preventDefault();
+
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value.trim();
+      const result = document.getElementById("result");
+
+      const url = "https://de3qg7ntqblkinxmxfhqoisuhi0pckix.lambda-url.eu-west-3.on.aws/";
+
+      const body = {
+        request: "token",
+        data: {
+          mail: email,
+          password: password
+        }
+      };
+
+      try {
+        result.innerText = "Connexion en cours...";
+
+        const response = await axios.post(url, body);
+        console.log("Réponse API :", response.data);
+
+        const parsed = JSON.parse(response.data.data);
+        const token = parsed.token;
+
+        localStorage.setItem("token", token);
+        localStorage.setItem("userEmail", email);
+
+        result.innerText = "Connexion réussie.";
+
+        window.location.href = "espace-personnel.html";
+
+      } catch (error) {
+        console.error(error);
+
+        if (error.response && error.response.data) {
+          result.innerText = "Erreur : " + JSON.stringify(error.response.data);
+        } else {
+          result.innerText = "Erreur : " + error.message;
+        }
+      }
+    });
+  </script>
+
+</body>
+</html>
