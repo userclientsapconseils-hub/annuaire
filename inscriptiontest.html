@@ -10,10 +10,10 @@
 <h2>Créer un compte</h2>
 
 <form id="registerForm">
-  <label>Email :</label><br>
+  <label for="email">Email :</label><br>
   <input type="email" id="email" required><br><br>
 
-  <label>Mot de passe :</label><br>
+  <label for="password">Mot de passe :</label><br>
   <input type="password" id="password" required><br><br>
 
   <button type="submit">S'inscrire</button>
@@ -27,29 +27,46 @@
 document.getElementById("registerForm").addEventListener("submit", async function(e) {
   e.preventDefault();
 
-  const email = document.getElementById("email").value;
-  const password = document.getElementById("password").value;
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value.trim();
+  const result = document.getElementById("result");
 
   const url = "https://de3qg7ntqblkinxmxfhqoisuhi0pckix.lambda-url.eu-west-3.on.aws/";
 
   const body = {
-    request: "token",
+    request: "insert",
     collection: "user",
     data: {
-      mail: email,
-      password: password
+      identification: {
+        mail: email,
+        password: password
+      }
     }
   };
 
   try {
-    const response = await axios.post(url, body);
+    result.innerText = "Envoi en cours...";
 
-    console.log(response.data);
-    document.getElementById("result").innerText = "Succès : " + JSON.stringify(response.data);
+    const response = await axios({
+      method: "post",
+      url: url,
+      headers: {
+        "Content-Type": "application/json"
+      },
+      data: body
+    });
+
+    console.log("Réponse API :", response.data);
+    result.innerText = "Succès : " + JSON.stringify(response.data);
 
   } catch (error) {
-    console.error(error);
-    document.getElementById("result").innerText = "Erreur : " + error.message;
+    console.error("Erreur complète :", error);
+
+    if (error.response) {
+      result.innerText = "Erreur API : " + JSON.stringify(error.response.data);
+    } else {
+      result.innerText = "Erreur : " + error.message;
+    }
   }
 });
 </script>
