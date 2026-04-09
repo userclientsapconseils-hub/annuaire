@@ -152,8 +152,8 @@
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <script>
     const API_URL = "https://de3qg7ntqblkinxmxfhqoisuhi0pckix.lambda-url.eu-west-3.on.aws/";
-    const token = localStorage.getItem("token");
-    const userEmail = localStorage.getItem("userEmail");
+    const SESSION_KEY = "authSession";
+    const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 jours
     const rawDraft = localStorage.getItem("adDraft");
 
     const userEmailEl = document.getElementById("userEmail");
@@ -163,13 +163,59 @@
     const deleteDraftBtn = document.getElementById("deleteDraftBtn");
     const draftStatus = document.getElementById("draftStatus");
 
+    function getStoredSession() {
+      const legacyToken = localStorage.getItem("token");
+      const legacyEmail = localStorage.getItem("userEmail");
+      const rawSession = localStorage.getItem(SESSION_KEY);
+
+      if (!rawSession) {
+        if (legacyToken && legacyEmail) {
+          return { token: legacyToken, email: legacyEmail, expiresAt: null };
+        }
+        return null;
+      }
+
+      try {
+        const parsed = JSON.parse(rawSession);
+        if (!parsed?.token || !parsed?.email) return null;
+        return parsed;
+      } catch (error) {
+        console.error("Session invalide dans le stockage local :", error);
+        return null;
+      }
+    }
+
+    function persistSession(token, email) {
+      const session = {
+        token,
+        email,
+        createdAt: Date.now(),
+        expiresAt: Date.now() + SESSION_TTL_MS
+      };
+      localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+      localStorage.setItem("token", token);
+      localStorage.setItem("userEmail", email);
+    }
+
+    function getActiveSession() {
+      const session = getStoredSession();
+      if (!session?.token || !session?.email) return null;
+
+      if (session.expiresAt && Date.now() >= Number(session.expiresAt)) {
+        return null;
+      }
+
+      return session;
+    }
+
     function forceLogout() {
+      localStorage.removeItem(SESSION_KEY);
       localStorage.removeItem("token");
       localStorage.removeItem("userEmail");
       window.location.href = "connect.html";
     }
 
-    async function validateUserSession() {
+    async function validateUserSession(token, userEmail) {
       if (!token || !userEmail) return "invalid";
 
       const body = {
@@ -204,6 +250,9 @@
         return "unknown";
       } catch (error) {
         console.error("Impossible de vérifier la session pour le moment :", error);
+        if (error?.response?.status === 401 || error?.response?.status === 403) {
+          return "invalid";
+        }
         return "unknown";
       }
     }
@@ -257,11 +306,16 @@
     });
 
     async function initDashboard() {
+      const session = getActiveSession();
+      const token = session?.token || "";
+      const userEmail = session?.email || "";
+
       if (!token || !userEmail) {
         forceLogout();
         return;
       }
 
+      persistSession(token, userEmail);
       userEmailEl.innerText = userEmail || "Non renseigné";
       userTokenEl.innerText = token || "-";
       showDraftStatus("Vérification de votre session...", "info");
@@ -269,7 +323,7 @@
       adActionBtn.style.opacity = "0.6";
       deleteDraftBtn.disabled = true;
 
-      const sessionState = await validateUserSession();
+      const sessionState = await validateUserSession(token, userEmail);
       if (sessionState === "invalid") {
         forceLogout();
         return;

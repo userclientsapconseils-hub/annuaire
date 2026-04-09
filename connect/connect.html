@@ -92,6 +92,59 @@
 
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <script>
+    const SESSION_KEY = "authSession";
+    const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 jours
+
+    function getStoredSession() {
+      const legacyToken = localStorage.getItem("token");
+      const legacyEmail = localStorage.getItem("userEmail");
+      const rawSession = localStorage.getItem(SESSION_KEY);
+
+      if (!rawSession) {
+        if (legacyToken && legacyEmail) {
+          return {
+            token: legacyToken,
+            email: legacyEmail,
+            expiresAt: null
+          };
+        }
+        return null;
+      }
+
+      try {
+        const parsed = JSON.parse(rawSession);
+        if (!parsed?.token || !parsed?.email) return null;
+        return parsed;
+      } catch (error) {
+        console.error("Session invalide dans le stockage local :", error);
+        return null;
+      }
+    }
+
+    function isSessionActive(session) {
+      if (!session?.token || !session?.email) return false;
+      if (!session.expiresAt) return true;
+      return Date.now() < Number(session.expiresAt);
+    }
+
+    function persistSession(token, email) {
+      const session = {
+        token,
+        email,
+        createdAt: Date.now(),
+        expiresAt: Date.now() + SESSION_TTL_MS
+      };
+
+      localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+      localStorage.setItem("token", token);
+      localStorage.setItem("userEmail", email);
+    }
+
+    const existingSession = getStoredSession();
+    if (isSessionActive(existingSession)) {
+      window.location.href = "dashboard.html";
+    }
+
     document.getElementById("loginForm").addEventListener("submit", async function(e) {
       e.preventDefault();
 
@@ -118,8 +171,7 @@
         const parsed = JSON.parse(response.data.data);
         const token = parsed.token;
 
-        localStorage.setItem("token", token);
-        localStorage.setItem("userEmail", email);
+        persistSession(token, email);
 
         result.innerText = "Connexion réussie.";
 
