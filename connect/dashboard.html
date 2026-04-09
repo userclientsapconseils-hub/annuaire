@@ -235,12 +235,12 @@
 
       if (draftExists) {
         adActionBtn.textContent = "Reprendre mon annonce";
-        adActionBtn.href = "../submit/submitindex.html?resume=1";
+        adActionBtn.href = "../submit/submitindex.html?resume=1&fromDashboard=1";
         deleteDraftBtn.style.display = "inline-flex";
         showDraftStatus("Un brouillon d’annonce a été trouvé. Vous pouvez reprendre là où vous vous êtes arrêté.", "warning");
       } else {
         adActionBtn.textContent = "Créer mon annonce";
-        adActionBtn.href = "../submit/submitindex.html";
+        adActionBtn.href = "../submit/submitindex.html?fromDashboard=1";
         deleteDraftBtn.style.display = "none";
         showDraftStatus("Aucun brouillon trouvé. Vous pouvez créer une nouvelle annonce.", "info");
       }

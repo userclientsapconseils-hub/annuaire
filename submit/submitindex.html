@@ -876,6 +876,9 @@ textarea{
 
   const savedEmail = localStorage.getItem("userEmail");
   const savedToken = localStorage.getItem("token");
+  const urlParams = new URLSearchParams(window.location.search);
+  const fromDashboard = urlParams.get("fromDashboard") === "1";
+  const shouldResume = urlParams.get("resume") === "1";
   const foundDraft = loadDraft();
 
   if (savedEmail) {
@@ -891,7 +894,7 @@ textarea{
 
   if (savedToken && savedEmail) {
     contactEmail.value = savedEmail;
-    if (foundDraft || window.location.search.includes("resume=1")) {
+    if (foundDraft || shouldResume || fromDashboard) {
       go(2);
       showStatus("Vous êtes connecté. Vous pouvez reprendre votre annonce.", "info");
     }
