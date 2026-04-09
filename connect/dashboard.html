@@ -170,7 +170,7 @@
     }
 
     async function validateUserSession() {
-      if (!token || !userEmail) return false;
+      if (!token || !userEmail) return "invalid";
 
       const body = {
         request: "find",
@@ -185,26 +185,26 @@
         });
         const payload = response?.data?.data;
 
-        if (payload === null || payload === undefined) return false;
+        if (payload === null || payload === undefined) return "invalid";
 
-        if (Array.isArray(payload)) return payload.length > 0;
+        if (Array.isArray(payload)) return payload.length > 0 ? "valid" : "invalid";
         if (typeof payload === "string") {
           try {
             const parsed = JSON.parse(payload);
-            if (Array.isArray(parsed)) return parsed.length > 0;
-            if (parsed && typeof parsed === "object") return Object.keys(parsed).length > 0;
-            return false;
+            if (Array.isArray(parsed)) return parsed.length > 0 ? "valid" : "invalid";
+            if (parsed && typeof parsed === "object") return Object.keys(parsed).length > 0 ? "valid" : "invalid";
+            return "invalid";
           } catch (error) {
-            return payload.trim() !== "";
+            return payload.trim() !== "" ? "valid" : "invalid";
           }
         }
 
-        if (typeof payload === "object") return Object.keys(payload).length > 0;
+        if (typeof payload === "object") return Object.keys(payload).length > 0 ? "valid" : "invalid";
 
-        return false;
+        return "unknown";
       } catch (error) {
-        console.error("Session invalide ou expirée :", error);
-        return false;
+        console.error("Impossible de vérifier la session pour le moment :", error);
+        return "unknown";
       }
     }
 
@@ -257,6 +257,11 @@
     });
 
     async function initDashboard() {
+      if (!token || !userEmail) {
+        forceLogout();
+        return;
+      }
+
       userEmailEl.innerText = userEmail || "Non renseigné";
       userTokenEl.innerText = token || "-";
       showDraftStatus("Vérification de votre session...", "info");
@@ -264,8 +269,8 @@
       adActionBtn.style.opacity = "0.6";
       deleteDraftBtn.disabled = true;
 
-      const isValidSession = await validateUserSession();
-      if (!isValidSession) {
+      const sessionState = await validateUserSession();
+      if (sessionState === "invalid") {
         forceLogout();
         return;
       }
@@ -274,6 +279,10 @@
       adActionBtn.style.opacity = "";
       deleteDraftBtn.disabled = false;
       refreshDraftUI();
+
+      if (sessionState === "unknown") {
+        showDraftStatus("Connexion conservée. Vérification distante indisponible pour le moment.", "warning");
+      }
     }
 
     initDashboard();
