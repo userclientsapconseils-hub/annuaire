@@ -140,45 +140,10 @@
       localStorage.setItem("userEmail", email);
     }
 
-    function clearSession() {
-      localStorage.removeItem(SESSION_KEY);
-      localStorage.removeItem("token");
-      localStorage.removeItem("userEmail");
+    const existingSession = getStoredSession();
+    if (isSessionActive(existingSession)) {
+      window.location.href = "dashboard.html";
     }
-
-    async function canReuseSession(session) {
-      if (!isSessionActive(session)) return false;
-
-      const body = {
-        request: "find",
-        collection: "user",
-        token: session.token,
-        data: { mail: session.email }
-      };
-
-      try {
-        const url = "https://de3qg7ntqblkinxmxfhqoisuhi0pckix.lambda-url.eu-west-3.on.aws/";
-        const response = await axios.post(url, body, {
-          headers: { "Content-Type": "application/json" }
-        });
-        return response?.data?.data !== null && response?.data?.data !== undefined;
-      } catch (error) {
-        return false;
-      }
-    }
-
-    (async function initLoginPage() {
-      const existingSession = getStoredSession();
-      if (!existingSession) return;
-
-      const sessionIsReusable = await canReuseSession(existingSession);
-      if (sessionIsReusable) {
-        window.location.href = "dashboard.html";
-        return;
-      }
-
-      clearSession();
-    })();
 
     document.getElementById("loginForm").addEventListener("submit", async function(e) {
       e.preventDefault();
@@ -203,22 +168,7 @@
         const response = await axios.post(url, body);
         console.log("Réponse API :", response.data);
 
-        const apiPayload = response.data || {};
-        let token = null;
-
-        if (apiPayload.data && typeof apiPayload.data === "object" && apiPayload.data.token) {
-          token = apiPayload.data.token;
-        } else if (typeof apiPayload.data === "string") {
-          try {
-            const parsedData = JSON.parse(apiPayload.data);
-            token = parsedData && parsedData.token ? parsedData.token : null;
-          } catch (parseError) {
-            console.error("Réponse token non JSON :", parseError);
-          }
-        } else if (apiPayload.token) {
-          token = apiPayload.token;
-        }
-
+        const token = extractTokenFromResponse(response.data);
         if (!token) {
           throw new Error("Token introuvable dans la réponse du serveur.");
         }
