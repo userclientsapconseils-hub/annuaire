@@ -140,64 +140,10 @@
       localStorage.setItem("userEmail", email);
     }
 
-    function clearSession() {
-      localStorage.removeItem(SESSION_KEY);
-      localStorage.removeItem("token");
-      localStorage.removeItem("userEmail");
+    const existingSession = getStoredSession();
+    if (isSessionActive(existingSession)) {
+      window.location.href = "dashboard.html";
     }
-
-    function extractTokenFromResponse(payload) {
-      const directData = payload?.data;
-      if (directData && typeof directData === "object" && directData.token) {
-        return directData.token;
-      }
-
-      if (typeof directData === "string") {
-        try {
-          const parsed = JSON.parse(directData);
-          if (parsed?.token) return parsed.token;
-        } catch (error) {
-          console.error("Réponse token non JSON :", error);
-        }
-      }
-
-      if (payload?.token) return payload.token;
-      return null;
-    }
-
-    async function canReuseSession(session) {
-      if (!isSessionActive(session)) return false;
-
-      const body = {
-        request: "find",
-        collection: "user",
-        token: session.token,
-        data: { mail: session.email }
-      };
-
-      try {
-        const url = "https://de3qg7ntqblkinxmxfhqoisuhi0pckix.lambda-url.eu-west-3.on.aws/";
-        const response = await axios.post(url, body, {
-          headers: { "Content-Type": "application/json" }
-        });
-        return response?.data?.data !== null && response?.data?.data !== undefined;
-      } catch (error) {
-        return false;
-      }
-    }
-
-    (async function initLoginPage() {
-      const existingSession = getStoredSession();
-      if (!existingSession) return;
-
-      const sessionIsReusable = await canReuseSession(existingSession);
-      if (sessionIsReusable) {
-        window.location.href = "dashboard.html";
-        return;
-      }
-
-      clearSession();
-    })();
 
     document.getElementById("loginForm").addEventListener("submit", async function(e) {
       e.preventDefault();
