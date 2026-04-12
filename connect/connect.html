@@ -92,6 +92,113 @@
 
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <script>
+    const SESSION_KEY = "authSession";
+    const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 jours
+
+    function getStoredSession() {
+      const legacyToken = localStorage.getItem("token");
+      const legacyEmail = localStorage.getItem("userEmail");
+      const rawSession = localStorage.getItem(SESSION_KEY);
+
+      if (!rawSession) {
+        if (legacyToken && legacyEmail) {
+          return {
+            token: legacyToken,
+            email: legacyEmail,
+            expiresAt: null
+          };
+        }
+        return null;
+      }
+
+      try {
+        const parsed = JSON.parse(rawSession);
+        if (!parsed?.token || !parsed?.email) return null;
+        return parsed;
+      } catch (error) {
+        console.error("Session invalide dans le stockage local :", error);
+        return null;
+      }
+    }
+
+    function isSessionActive(session) {
+      if (!session?.token || !session?.email) return false;
+      if (!session.expiresAt) return true;
+      return Date.now() < Number(session.expiresAt);
+    }
+
+    function persistSession(token, email) {
+      const session = {
+        token,
+        email,
+        createdAt: Date.now(),
+        expiresAt: Date.now() + SESSION_TTL_MS
+      };
+
+      localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+      localStorage.setItem("token", token);
+      localStorage.setItem("userEmail", email);
+    }
+
+    function clearSession() {
+      localStorage.removeItem(SESSION_KEY);
+      localStorage.removeItem("token");
+      localStorage.removeItem("userEmail");
+    }
+
+    function extractTokenFromResponse(payload) {
+      const directData = payload?.data;
+      if (directData && typeof directData === "object" && directData.token) {
+        return directData.token;
+      }
+
+      if (typeof directData === "string") {
+        try {
+          const parsed = JSON.parse(directData);
+          if (parsed?.token) return parsed.token;
+        } catch (error) {
+          console.error("Réponse token non JSON :", error);
+        }
+      }
+
+      if (payload?.token) return payload.token;
+      return null;
+    }
+
+    async function canReuseSession(session) {
+      if (!isSessionActive(session)) return false;
+
+      const body = {
+        request: "find",
+        collection: "user",
+        token: session.token,
+        data: { mail: session.email }
+      };
+
+      try {
+        const url = "https://de3qg7ntqblkinxmxfhqoisuhi0pckix.lambda-url.eu-west-3.on.aws/";
+        const response = await axios.post(url, body, {
+          headers: { "Content-Type": "application/json" }
+        });
+        return response?.data?.data !== null && response?.data?.data !== undefined;
+      } catch (error) {
+        return false;
+      }
+    }
+
+    (async function initLoginPage() {
+      const existingSession = getStoredSession();
+      if (!existingSession) return;
+
+      const sessionIsReusable = await canReuseSession(existingSession);
+      if (sessionIsReusable) {
+        window.location.href = "dashboard.html";
+        return;
+      }
+
+      clearSession();
+    })();
+
     document.getElementById("loginForm").addEventListener("submit", async function(e) {
       e.preventDefault();
 
@@ -115,11 +222,12 @@
         const response = await axios.post(url, body);
         console.log("Réponse API :", response.data);
 
-        const parsed = JSON.parse(response.data.data);
-        const token = parsed.token;
+        const token = extractTokenFromResponse(response.data);
+        if (!token) {
+          throw new Error("Token introuvable dans la réponse du serveur.");
+        }
 
-        localStorage.setItem("token", token);
-        localStorage.setItem("userEmail", email);
+        persistSession(token, email);
 
         result.innerText = "Connexion réussie.";
 
