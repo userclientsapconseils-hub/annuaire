@@ -168,8 +168,10 @@
         const response = await axios.post(url, body);
         console.log("Réponse API :", response.data);
 
-        const parsed = JSON.parse(response.data.data);
-        const token = parsed.token;
+        const token = extractTokenFromResponse(response.data);
+        if (!token) {
+          throw new Error("Token introuvable dans la réponse du serveur.");
+        }
 
         persistSession(token, email);
 
