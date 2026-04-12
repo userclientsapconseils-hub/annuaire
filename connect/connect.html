@@ -140,6 +140,30 @@
       localStorage.setItem("userEmail", email);
     }
 
+    function extractTokenFromResponse(payload) {
+      if (!payload) return null;
+
+      const directToken = payload?.token || payload?.data?.token;
+      if (typeof directToken === "string" && directToken.trim() !== "") {
+        return directToken.trim();
+      }
+
+      const rawData = payload?.data;
+      if (typeof rawData === "string") {
+        try {
+          const parsed = JSON.parse(rawData);
+          const parsedToken = parsed?.token;
+          if (typeof parsedToken === "string" && parsedToken.trim() !== "") {
+            return parsedToken.trim();
+          }
+        } catch (error) {
+          console.warn("Impossible de parser la réponse token :", error);
+        }
+      }
+
+      return null;
+    }
+
     const existingSession = getStoredSession();
     if (isSessionActive(existingSession)) {
       window.location.href = "dashboard.html";
