@@ -3,103 +3,57 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Connexion</title>
+  <title>Accueil</title>
   <style>
     body{
       margin:0;
       font-family:Arial, sans-serif;
       background:#0b0f17;
-      color:#111;
+      color:#fff;
       display:flex;
       justify-content:center;
       align-items:center;
       min-height:100vh;
     }
-    .card{
-      background:#fff;
-      padding:30px;
-      border-radius:14px;
-      width:100%;
-      max-width:380px;
-      box-shadow:0 15px 40px rgba(0,0,0,.25);
+    .container{
+      text-align:center;
     }
     h1{
-      margin-top:0;
-      font-size:26px;
+      margin-bottom:24px;
+      font-size:32px;
     }
-    label{
-      display:block;
-      margin-bottom:6px;
-      font-weight:700;
-    }
-    input{
-      width:100%;
-      padding:12px;
-      margin-bottom:16px;
-      border:1px solid #d1d5db;
-      border-radius:8px;
-      box-sizing:border-box;
-    }
-    button{
-      width:100%;
-      padding:12px;
+    .btn{
+      display:inline-block;
+      padding:14px 22px;
       border:none;
-      border-radius:8px;
+      border-radius:10px;
       background:#e53935;
       color:#fff;
       font-weight:700;
+      font-size:16px;
+      text-decoration:none;
       cursor:pointer;
     }
-    button:hover{
+    .btn:hover{
       opacity:.95;
     }
-    button:disabled{
-      opacity:.7;
-      cursor:not-allowed;
-    }
-    #result{
+    #message{
       margin-top:16px;
       font-size:14px;
-      white-space:pre-wrap;
-    }
-    a{
-      color:#e53935;
-      text-decoration:none;
-    }
-    .bottom{
-      margin-top:16px;
-      font-size:14px;
-      text-align:center;
+      color:#cbd5e1;
     }
   </style>
 </head>
 <body>
 
-  <div class="card">
-    <h1>Connexion</h1>
-
-    <form id="loginForm">
-      <label for="email">Adresse mail</label>
-      <input type="email" id="email" required>
-
-      <label for="password">Mot de passe</label>
-      <input type="password" id="password" required>
-
-      <button type="submit" id="loginButton">Se connecter</button>
-    </form>
-
-    <p id="result"></p>
-
-    <div class="bottom">
-      Pas encore inscrit ? <a href="inscription.html">Créer un compte</a>
-    </div>
+  <div class="container">
+    <h1>Bienvenue</h1>
+    <a href="connexion.html" id="loginButton" class="btn">Connexion</a>
+    <p id="message"></p>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <script>
-    const API_URL = "https://de3qg7ntqblkinxmxfhqoisuhi0pckix.lambda-url.eu-west-3.on.aws/";
     const SESSION_KEY = "authSession";
-    const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 jours
 
     function getStoredSession() {
       const rawSession = localStorage.getItem(SESSION_KEY);
@@ -134,116 +88,28 @@
       return Date.now() < Number(session.expiresAt);
     }
 
-    function persistSession(token, email) {
-      const session = {
-        token: token,
-        email: email,
-        createdAt: Date.now(),
-        expiresAt: Date.now() + SESSION_TTL_MS
-      };
-
-      localStorage.setItem(SESSION_KEY, JSON.stringify(session));
-      localStorage.setItem("token", token);
-      localStorage.setItem("userEmail", email);
-    }
-
     function clearSession() {
-      localStorage.removeItem(SESSION_KEY);
+      localStorage.removeItem("authSession");
       localStorage.removeItem("token");
       localStorage.removeItem("userEmail");
     }
 
-    function extractTokenFromResponse(apiResponse) {
-      if (!apiResponse) {
-        return null;
-      }
+    const loginButton = document.getElementById("loginButton");
+    const message = document.getElementById("message");
 
-      // Cas le plus probable avec ton API
-      if (typeof apiResponse.data === "string" && apiResponse.data.trim() !== "") {
-        return apiResponse.data.trim();
-      }
+    loginButton.addEventListener("click", function (e) {
+      const session = getStoredSession();
 
-      // Autres cas possibles
-      if (typeof apiResponse.token === "string" && apiResponse.token.trim() !== "") {
-        return apiResponse.token.trim();
-      }
-
-      if (
-        apiResponse.data &&
-        typeof apiResponse.data === "object" &&
-        typeof apiResponse.data.token === "string" &&
-        apiResponse.data.token.trim() !== ""
-      ) {
-        return apiResponse.data.token.trim();
-      }
-
-      return null;
-    }
-
-    function showMessage(message) {
-      document.getElementById("result").innerText = message;
-    }
-
-    const existingSession = getStoredSession();
-    if (isSessionActive(existingSession)) {
-      window.location.href = "dashboard.html";
-    } else {
-      clearSession();
-    }
-
-    document.getElementById("loginForm").addEventListener("submit", async function (e) {
-      e.preventDefault();
-
-      const email = document.getElementById("email").value.trim();
-      const password = document.getElementById("password").value;
-      const loginButton = document.getElementById("loginButton");
-
-      if (!email || !password) {
-        showMessage("Merci de renseigner votre adresse mail et votre mot de passe.");
+      if (isSessionActive(session)) {
+        e.preventDefault();
+        message.innerText = "Session détectée, redirection vers votre dashboard...";
+        window.location.href = "dashboard.html";
         return;
       }
 
-      const body = {
-        request: "token",
-        data: {
-          mail: email,
-          password: password
-        }
-      };
-
-      try {
-        loginButton.disabled = true;
-        showMessage("Connexion en cours...");
-
-        const response = await axios.post(API_URL, body, {
-          headers: {
-            "Content-Type": "application/json"
-          }
-        });
-
-        console.log("Réponse API complète :", response.data);
-
-        const token = extractTokenFromResponse(response.data);
-
-        if (!token) {
-          throw new Error("Token introuvable dans la réponse du serveur.");
-        }
-
-        persistSession(token, email);
-        showMessage("Connexion réussie.");
-
-        window.location.href = "dashboard.html";
-      } catch (error) {
-        console.error("Erreur de connexion :", error);
-
-        if (error.response && error.response.data) {
-          showMessage("Erreur : " + JSON.stringify(error.response.data));
-        } else {
-          showMessage("Erreur : " + error.message);
-        }
-      } finally {
-        loginButton.disabled = false;
-      }
+      clearSession();
+      message.innerText = "Aucune session valide, redirection vers la page de connexion...";
+      window.location.href = "connexion.html";
     });
   </script>
 
