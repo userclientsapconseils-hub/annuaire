@@ -416,69 +416,42 @@ textarea{
             <div class="grid">
 
               <div class="form-group">
-                <label for="nom">Nom du professionnel</label>
-                <input id="nom" name="nom" type="text" placeholder="Ex : Marie Dupont">
+                <label for="nom">Nom</label>
+                <input id="nom" name="nom" type="text" placeholder="Ex : Dupont">
               </div>
 
               <div class="form-group">
-                <label for="statut">Statut</label>
-                <input id="statut" name="statut" type="text" placeholder="Ex : Auto-entrepreneur">
+                <label for="prenom">Prénom</label>
+                <input id="prenom" name="prenom" type="text" placeholder="Ex : Marie">
               </div>
 
               <div class="form-group">
-                <label for="activite">Activité principale</label>
-                <select id="activite" name="activite">
-                  <option value="Paysagiste">Paysagiste</option>
-                  <option value="Nettoyage">Nettoyage</option>
-                  <option value="Coach sportif">Coach sportif</option>
-                  <option value="Aide à domicile">Aide à domicile</option>
-                  <option value="Bricolage">Bricolage</option>
-                </select>
+                <label for="entreprise">Nom de l'entreprise</label>
+                <input id="entreprise" name="entreprise" type="text" placeholder="Ex : Services Dupont">
               </div>
 
               <div class="form-group">
-                <label for="cp">Code postal principal</label>
+                <label for="cp">Code Postal</label>
                 <input id="cp" name="cp" type="text" placeholder="Ex : 38000">
               </div>
 
               <div class="form-group">
-                <label for="departement">Zone couverte (département)</label>
-                <input id="departement" name="departement" type="text" placeholder="Ex : 38">
+                <label for="ville">Ville</label>
+                <input id="ville" name="ville" type="text" placeholder="Ex : Grenoble">
               </div>
 
               <div class="form-group">
-                <label for="tarif">Tarif horaire à partir de</label>
-                <input id="tarif" name="tarif" type="text" placeholder="Ex : 29 € / h">
+                <label for="adresse">Adresse</label>
+                <input id="adresse" name="adresse" type="text" placeholder="Ex : 12 rue des Alpes">
               </div>
 
               <div class="form-group full">
-                <label for="description">Description de votre activité</label>
-                <textarea id="description" name="description" placeholder="Présentez votre activité, votre expérience et votre zone d’intervention..."></textarea>
-              </div>
-
-              <div class="form-group full">
-                <label for="prestations">Prestations proposées</label>
-                <textarea id="prestations" name="prestations" placeholder="Ex : Entretien, vitres, grand ménage, Airbnb... (une par ligne)"></textarea>
-              </div>
-
-              <div class="form-group full">
-                <label for="disponibilites">Disponibilités</label>
-                <textarea id="disponibilites" name="disponibilites" placeholder="Ex : Lundi - Vendredi 9h / 18h, délai 48h..."></textarea>
-              </div>
-
-              <div class="form-group">
-                <label for="telephone">Téléphone</label>
-                <input id="telephone" name="telephone" type="tel" placeholder="06 00 00 00 00">
-              </div>
-
-              <div class="form-group">
-                <label for="contactEmail">Email de contact</label>
-                <input id="contactEmail" name="contactEmail" type="email" placeholder="contact@exemple.fr" readonly>
-              </div>
-
-              <div class="form-group full">
-                <label for="iban">IBAN</label>
-                <input id="iban" name="iban" type="text" placeholder="Ex : FR76 3000 6000 0112 3456 7890 189">
+                <label for="activite">Activité</label>
+                <select id="activite" name="activite">
+                  <option value="Jardin">Jardin</option>
+                  <option value="Ménage">Ménage</option>
+                  <option value="Sport">Sport</option>
+                </select>
               </div>
 
             </div>
@@ -497,58 +470,38 @@ textarea{
           <h3>Aperçu de votre annonce</h3>
 
           <div class="preview-block">
-            <strong>Nom du professionnel</strong>
+            <strong>Nom</strong>
             <div id="previewNom">-</div>
           </div>
 
           <div class="preview-block">
-            <strong>Statut</strong>
-            <div id="previewStatut">-</div>
+            <strong>Prénom</strong>
+            <div id="previewPrenom">-</div>
           </div>
 
           <div class="preview-block">
-            <strong>Activité principale</strong>
+            <strong>Nom de l'entreprise</strong>
+            <div id="previewEntreprise">-</div>
+          </div>
+
+          <div class="preview-block">
+            <strong>Code Postal</strong>
+            <div id="previewCp">-</div>
+          </div>
+
+          <div class="preview-block">
+            <strong>Ville</strong>
+            <div id="previewVille">-</div>
+          </div>
+
+          <div class="preview-block">
+            <strong>Adresse</strong>
+            <div id="previewAdresse">-</div>
+          </div>
+
+          <div class="preview-block">
+            <strong>Activité</strong>
             <div id="previewActivite">-</div>
-          </div>
-
-          <div class="preview-block">
-            <strong>Zone principale</strong>
-            <div id="previewZone">-</div>
-          </div>
-
-          <div class="preview-block">
-            <strong>Tarif</strong>
-            <div id="previewTarif">-</div>
-          </div>
-
-          <div class="preview-block">
-            <strong>Description</strong>
-            <div id="previewDescription">-</div>
-          </div>
-
-          <div class="preview-block">
-            <strong>Prestations proposées</strong>
-            <div id="previewPrestations">-</div>
-          </div>
-
-          <div class="preview-block">
-            <strong>Disponibilités</strong>
-            <div id="previewDisponibilites">-</div>
-          </div>
-
-          <div class="preview-block">
-            <strong>Téléphone</strong>
-            <div id="previewTelephone">-</div>
-          </div>
-
-          <div class="preview-block">
-            <strong>Email</strong>
-            <div id="previewEmail">-</div>
-          </div>
-
-          <div class="preview-block">
-            <strong>IBAN</strong>
-            <div id="previewIban">-</div>
           </div>
         </div>
 
@@ -576,25 +529,18 @@ textarea{
 
   const registerEmail = document.getElementById("registerEmail");
   const registerPassword = document.getElementById("registerPassword");
-  const contactEmail = document.getElementById("contactEmail");
-
   const statusBox = document.getElementById("statusBox");
   const previewBox = document.getElementById("previewBox");
   const resumeNotice = document.getElementById("resumeNotice");
 
   const adFieldIds = [
     "nom",
-    "statut",
+    "prenom",
+    "entreprise",
     "activite",
     "cp",
-    "departement",
-    "tarif",
-    "description",
-    "prestations",
-    "disponibilites",
-    "telephone",
-    "contactEmail",
-    "iban"
+    "ville",
+    "adresse"
   ];
 
   form.addEventListener("submit", (e) => e.preventDefault());
@@ -640,17 +586,12 @@ textarea{
   function getDraftData() {
     return {
       nom: document.getElementById("nom").value.trim(),
-      statut: document.getElementById("statut").value.trim(),
+      prenom: document.getElementById("prenom").value.trim(),
+      entreprise: document.getElementById("entreprise").value.trim(),
       activite: document.getElementById("activite").value,
       cp: document.getElementById("cp").value.trim(),
-      departement: document.getElementById("departement").value.trim(),
-      tarif: document.getElementById("tarif").value.trim(),
-      description: document.getElementById("description").value.trim(),
-      prestations: document.getElementById("prestations").value.trim(),
-      disponibilites: document.getElementById("disponibilites").value.trim(),
-      telephone: document.getElementById("telephone").value.trim(),
-      contactEmail: document.getElementById("contactEmail").value.trim(),
-      iban: document.getElementById("iban").value.trim()
+      ville: document.getElementById("ville").value.trim(),
+      adresse: document.getElementById("adresse").value.trim()
     };
   }
 
@@ -667,17 +608,12 @@ textarea{
       const draft = JSON.parse(raw);
 
       document.getElementById("nom").value = draft.nom || "";
-      document.getElementById("statut").value = draft.statut || "";
-      document.getElementById("activite").value = draft.activite || "Paysagiste";
+      document.getElementById("prenom").value = draft.prenom || "";
+      document.getElementById("entreprise").value = draft.entreprise || "";
+      document.getElementById("activite").value = draft.activite || "Jardin";
       document.getElementById("cp").value = draft.cp || "";
-      document.getElementById("departement").value = draft.departement || "";
-      document.getElementById("tarif").value = draft.tarif || "";
-      document.getElementById("description").value = draft.description || "";
-      document.getElementById("prestations").value = draft.prestations || "";
-      document.getElementById("disponibilites").value = draft.disponibilites || "";
-      document.getElementById("telephone").value = draft.telephone || "";
-      document.getElementById("contactEmail").value = draft.contactEmail || localStorage.getItem("userEmail") || "";
-      document.getElementById("iban").value = draft.iban || "";
+      document.getElementById("ville").value = draft.ville || "";
+      document.getElementById("adresse").value = draft.adresse || "";
 
       return true;
     } catch (error) {
@@ -757,8 +693,6 @@ textarea{
       }
 
       localStorage.setItem("userEmail", email);
-      contactEmail.value = email;
-
       saveDraft();
 
       showStatus("Compte créé avec succès. Vous pouvez maintenant créer votre annonce.", "success");
@@ -785,38 +719,20 @@ textarea{
     saveDraft();
 
     const nom = document.getElementById("nom").value.trim() || "-";
-    const statut = document.getElementById("statut").value.trim() || "-";
+    const prenom = document.getElementById("prenom").value.trim() || "-";
+    const entreprise = document.getElementById("entreprise").value.trim() || "-";
     const activite = document.getElementById("activite").value || "-";
-    const cp = document.getElementById("cp").value.trim();
-    const departement = document.getElementById("departement").value.trim();
-    const tarif = document.getElementById("tarif").value.trim() || "-";
-    const description = document.getElementById("description").value.trim() || "-";
-    const prestations = document.getElementById("prestations").value.trim() || "-";
-    const disponibilites = document.getElementById("disponibilites").value.trim() || "-";
-    const telephone = document.getElementById("telephone").value.trim() || "-";
-    const email = document.getElementById("contactEmail").value.trim() || "-";
-    const iban = document.getElementById("iban").value.trim() || "-";
-
-    let zone = "-";
-    if (cp && departement) {
-      zone = "Code postal : " + cp + " | Département : " + departement;
-    } else if (cp) {
-      zone = "Code postal : " + cp;
-    } else if (departement) {
-      zone = "Département : " + departement;
-    }
+    const cp = document.getElementById("cp").value.trim() || "-";
+    const ville = document.getElementById("ville").value.trim() || "-";
+    const adresse = document.getElementById("adresse").value.trim() || "-";
 
     document.getElementById("previewNom").textContent = nom;
-    document.getElementById("previewStatut").textContent = statut;
+    document.getElementById("previewPrenom").textContent = prenom;
+    document.getElementById("previewEntreprise").textContent = entreprise;
     document.getElementById("previewActivite").textContent = activite;
-    document.getElementById("previewZone").textContent = zone;
-    document.getElementById("previewTarif").textContent = tarif;
-    document.getElementById("previewDescription").textContent = description;
-    document.getElementById("previewPrestations").textContent = prestations;
-    document.getElementById("previewDisponibilites").textContent = disponibilites;
-    document.getElementById("previewTelephone").textContent = telephone;
-    document.getElementById("previewEmail").textContent = email;
-    document.getElementById("previewIban").textContent = iban;
+    document.getElementById("previewCp").textContent = cp;
+    document.getElementById("previewVille").textContent = ville;
+    document.getElementById("previewAdresse").textContent = adresse;
 
     previewBox.classList.add("show");
     showStatus("Brouillon sauvegardé. Voici un aperçu de votre annonce.", "info");
@@ -883,9 +799,6 @@ textarea{
 
   if (savedEmail) {
     registerEmail.value = savedEmail;
-    if (!contactEmail.value.trim()) {
-      contactEmail.value = savedEmail;
-    }
   }
 
   if (foundDraft) {
@@ -893,7 +806,6 @@ textarea{
   }
 
   if (savedToken && savedEmail) {
-    contactEmail.value = savedEmail;
     if (foundDraft || shouldResume || fromDashboard) {
       go(2);
       showStatus("Vous êtes connecté. Vous pouvez reprendre votre annonce.", "info");
