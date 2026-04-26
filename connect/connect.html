@@ -3,57 +3,163 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Accueil</title>
+  <title>Connexion</title>
   <style>
-    body{
-      margin:0;
-      font-family:Arial, sans-serif;
-      background:#0b0f17;
-      color:#fff;
-      display:flex;
-      justify-content:center;
-      align-items:center;
-      min-height:100vh;
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #0b0f17;
+      color: #fff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 16px;
+      box-sizing: border-box;
     }
-    .container{
-      text-align:center;
+
+    .container {
+      width: 100%;
+      max-width: 460px;
+      background: #111827;
+      border-radius: 14px;
+      padding: 26px;
+      box-sizing: border-box;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, .3);
     }
-    h1{
-      margin-bottom:24px;
-      font-size:32px;
+
+    h1 {
+      margin-top: 0;
+      margin-bottom: 10px;
+      font-size: 30px;
     }
-    .btn{
-      display:inline-block;
-      padding:14px 22px;
-      border:none;
-      border-radius:10px;
-      background:#e53935;
-      color:#fff;
-      font-weight:700;
-      font-size:16px;
-      text-decoration:none;
-      cursor:pointer;
+
+    p.subtitle {
+      margin-top: 0;
+      margin-bottom: 24px;
+      color: #cbd5e1;
+      font-size: 14px;
     }
-    .btn:hover{
-      opacity:.95;
+
+    .field {
+      margin-bottom: 14px;
     }
-    #message{
-      margin-top:16px;
-      font-size:14px;
-      color:#cbd5e1;
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 14px;
+      color: #e2e8f0;
+    }
+
+    input {
+      width: 100%;
+      border: 1px solid #374151;
+      border-radius: 10px;
+      padding: 12px;
+      font-size: 15px;
+      background: #0f172a;
+      color: #fff;
+      box-sizing: border-box;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: #ef4444;
+      box-shadow: 0 0 0 3px rgba(239, 68, 68, .2);
+    }
+
+    .btn {
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+      width: 100%;
+      margin-top: 10px;
+      padding: 13px;
+      border: none;
+      border-radius: 10px;
+      background: #e53935;
+      color: #fff;
+      font-weight: 700;
+      font-size: 15px;
+      cursor: pointer;
+    }
+
+    .btn:disabled {
+      opacity: .7;
+      cursor: not-allowed;
+    }
+
+    .status {
+      margin-top: 14px;
+      padding: 12px;
+      border-radius: 10px;
+      font-size: 14px;
+      display: none;
+    }
+
+    .status.show {
+      display: block;
+    }
+
+    .status.info {
+      background: #eff6ff;
+      color: #1d4ed8;
+      border: 1px solid #bfdbfe;
+    }
+
+    .status.success {
+      background: #dcfce7;
+      color: #166534;
+      border: 1px solid #bbf7d0;
+    }
+
+    .status.error {
+      background: #fee2e2;
+      color: #991b1b;
+      border: 1px solid #fecaca;
     }
   </style>
 </head>
 <body>
 
   <div class="container">
-    <h1>Bienvenue</h1>
-    <a href="connect.html" id="loginButton" class="btn">Connexion</a>
-    <p id="message"></p>
+    <h1>Connexion</h1>
+    <p class="subtitle">Connectez-vous avec votre adresse mail et votre mot de passe.</p>
+
+    <form id="loginForm" novalidate>
+      <div class="field">
+        <label for="email">Adresse mail</label>
+        <input id="email" name="email" type="email" placeholder="contact@exemple.fr" autocomplete="email" required>
+      </div>
+
+      <div class="field">
+        <label for="password">Mot de passe</label>
+        <input id="password" name="password" type="password" placeholder="Votre mot de passe" autocomplete="current-password" required>
+      </div>
+
+      <button id="submitBtn" type="submit" class="btn">Se connecter</button>
+    </form>
+
+    <p id="message" class="status"></p>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <script>
+    const API_URL = "https://de3qg7ntqblkinxmxfhqoisuhi0pckix.lambda-url.eu-west-3.on.aws/";
     const SESSION_KEY = "authSession";
+    const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 jours
+
+    const loginForm = document.getElementById("loginForm");
+    const emailInput = document.getElementById("email");
+    const passwordInput = document.getElementById("password");
+    const submitBtn = document.getElementById("submitBtn");
+    const message = document.getElementById("message");
+
+    function showMessage(text, type) {
+      message.className = "status show " + type;
+      message.textContent = text;
+    }
 
     function getStoredSession() {
       const rawSession = localStorage.getItem(SESSION_KEY);
@@ -88,29 +194,112 @@
       return Date.now() < Number(session.expiresAt);
     }
 
+    function persistSession(token, email) {
+      const session = {
+        token,
+        email,
+        createdAt: Date.now(),
+        expiresAt: Date.now() + SESSION_TTL_MS
+      };
+
+      localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+      localStorage.setItem("token", token);
+      localStorage.setItem("userEmail", email);
+    }
+
     function clearSession() {
-      localStorage.removeItem("authSession");
+      localStorage.removeItem(SESSION_KEY);
       localStorage.removeItem("token");
       localStorage.removeItem("userEmail");
     }
 
-    const loginButton = document.getElementById("loginButton");
-    const message = document.getElementById("message");
+    async function login(email, password) {
+      const body = {
+        request: "token",
+        collection: "user",
+        data: {
+          mail: email,
+          password: password
+        }
+      };
 
-    loginButton.addEventListener("click", function (e) {
-      const session = getStoredSession();
+      const response = await axios.post(API_URL, body, {
+        headers: { "Content-Type": "application/json" }
+      });
 
-      if (isSessionActive(session)) {
-        e.preventDefault();
-        message.innerText = "Session détectée, redirection vers votre dashboard...";
-        window.location.href = "dashboard.html";
+      const payload = response?.data?.data;
+      if (!payload) {
+        return null;
+      }
+
+      if (typeof payload === "string") {
+        try {
+          const parsed = JSON.parse(payload);
+          return parsed?.token || null;
+        } catch {
+          return payload;
+        }
+      }
+
+      if (typeof payload === "object") {
+        return payload?.token || null;
+      }
+
+      return null;
+    }
+
+    loginForm.addEventListener("submit", async function(event) {
+      event.preventDefault();
+
+      const email = emailInput.value.trim();
+      const password = passwordInput.value.trim();
+
+      if (!email) {
+        showMessage("Veuillez renseigner votre adresse mail.", "error");
         return;
       }
 
-      clearSession();
-      message.innerText = "Aucune session valide, redirection vers la page de connexion...";
-      window.location.href = "connect.html";
+      if (!password) {
+        showMessage("Veuillez renseigner votre mot de passe.", "error");
+        return;
+      }
+
+      try {
+        submitBtn.disabled = true;
+        submitBtn.textContent = "Connexion en cours...";
+        showMessage("Vérification de vos identifiants...", "info");
+
+        const token = await login(email, password);
+
+        if (!token) {
+          showMessage("Identifiants incorrects. Vérifiez votre mail et votre mot de passe.", "error");
+          return;
+        }
+
+        persistSession(token, email);
+        showMessage("Connexion réussie. Redirection vers votre dashboard...", "success");
+        window.location.href = "dashboard.html";
+      } catch (error) {
+        console.error("Erreur de connexion :", error);
+        showMessage("Impossible de se connecter pour le moment. Réessayez dans quelques instants.", "error");
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Se connecter";
+      }
     });
+
+    const existingSession = getStoredSession();
+    if (isSessionActive(existingSession)) {
+      showMessage("Session active détectée, redirection vers votre dashboard...", "info");
+      window.location.href = "dashboard.html";
+    } else {
+      clearSession();
+    }
+
+    const savedEmail = localStorage.getItem("userEmail");
+    if (savedEmail) {
+      emailInput.value = savedEmail;
+    }
   </script>
 
 </body>
