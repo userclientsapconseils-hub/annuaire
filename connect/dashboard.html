@@ -150,8 +150,8 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script src="api.js"></script>
   <script>
-    const API_URL = "https://de3qg7ntqblkinxmxfhqoisuhi0pckix.lambda-url.eu-west-3.on.aws/";
     const SESSION_KEY = "authSession";
     const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 jours
     const rawDraft = localStorage.getItem("adDraft");
@@ -213,48 +213,6 @@
       localStorage.removeItem("token");
       localStorage.removeItem("userEmail");
       window.location.href = "connect.html";
-    }
-
-    async function validateUserSession(token, userEmail) {
-      if (!token || !userEmail) return "invalid";
-
-      const body = {
-        request: "find",
-        collection: "user",
-        token: token,
-        data: { mail: userEmail }
-      };
-
-      try {
-        const response = await axios.post(API_URL, body, {
-          headers: { "Content-Type": "application/json" }
-        });
-        const payload = response?.data?.data;
-
-        if (payload === null || payload === undefined) return "invalid";
-
-        if (Array.isArray(payload)) return payload.length > 0 ? "valid" : "invalid";
-        if (typeof payload === "string") {
-          try {
-            const parsed = JSON.parse(payload);
-            if (Array.isArray(parsed)) return parsed.length > 0 ? "valid" : "invalid";
-            if (parsed && typeof parsed === "object") return Object.keys(parsed).length > 0 ? "valid" : "invalid";
-            return "invalid";
-          } catch (error) {
-            return payload.trim() !== "" ? "valid" : "invalid";
-          }
-        }
-
-        if (typeof payload === "object") return Object.keys(payload).length > 0 ? "valid" : "invalid";
-
-        return "unknown";
-      } catch (error) {
-        console.error("Impossible de vérifier la session pour le moment :", error);
-        if (error?.response?.status === 401 || error?.response?.status === 403) {
-          return "invalid";
-        }
-        return "unknown";
-      }
     }
 
     function hasMeaningfulDraft() {
@@ -323,7 +281,7 @@
       adActionBtn.style.opacity = "0.6";
       deleteDraftBtn.disabled = true;
 
-      const sessionState = await validateUserSession(token, userEmail);
+      const sessionState = await ApiClient.validateUserSession(token, userEmail);
       if (sessionState === "invalid") {
         forceLogout();
         return;

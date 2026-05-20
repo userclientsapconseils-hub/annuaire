@@ -145,8 +145,8 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script src="api.js"></script>
   <script>
-    const API_URL = "https://de3qg7ntqblkinxmxfhqoisuhi0pckix.lambda-url.eu-west-3.on.aws/";
     const SESSION_KEY = "authSession";
     const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 jours
 
@@ -213,41 +213,6 @@
       localStorage.removeItem("userEmail");
     }
 
-    async function login(email, password) {
-      const body = {
-        request: "token",
-        collection: "user",
-        data: {
-          mail: email,
-          password: password
-        }
-      };
-
-      const response = await axios.post(API_URL, body, {
-        headers: { "Content-Type": "application/json" }
-      });
-
-      const payload = response?.data?.data;
-      if (!payload) {
-        return null;
-      }
-
-      if (typeof payload === "string") {
-        try {
-          const parsed = JSON.parse(payload);
-          return parsed?.token || null;
-        } catch {
-          return payload;
-        }
-      }
-
-      if (typeof payload === "object") {
-        return payload?.token || null;
-      }
-
-      return null;
-    }
-
     loginForm.addEventListener("submit", async function(event) {
       event.preventDefault();
 
@@ -269,7 +234,7 @@
         submitBtn.textContent = "Connexion en cours...";
         showMessage("Vérification de vos identifiants...", "info");
 
-        const token = await login(email, password);
+        const token = await ApiClient.login(email, password);
 
         if (!token) {
           showMessage("Identifiants incorrects. Vérifiez votre mail et votre mot de passe.", "error");
