@@ -520,6 +520,7 @@ textarea{
 
   const API_URL = "https://de3qg7ntqblkinxmxfhqoisuhi0pckix.lambda-url.eu-west-3.on.aws/";
   const DRAFT_KEY = "adDraft";
+  const OFFER_COLLECTION = "publicOffer";
   const form = document.getElementById("multiStepForm");
   const steps = Array.from(form.querySelectorAll(".step"));
   const dots = Array.from(document.querySelectorAll(".dot[data-dot]"));
@@ -643,6 +644,43 @@ textarea{
     }
   }
 
+
+  function extractTokenFromPayload(payload) {
+    if (!payload) return null;
+
+    if (typeof payload === "string") {
+      try {
+        const parsed = JSON.parse(payload);
+        return parsed?.token || null;
+      } catch {
+        return payload;
+      }
+    }
+
+    if (typeof payload === "object") {
+      return payload?.token || null;
+    }
+
+    return null;
+  }
+
+  async function requestTokenForCredentials(email, password) {
+    const body = {
+      request: "token",
+      collection: "user",
+      data: {
+        mail: email,
+        password: password
+      }
+    };
+
+    const response = await axios.post(API_URL, body, {
+      headers: { "Content-Type": "application/json" }
+    });
+
+    return extractTokenFromPayload(response?.data?.data);
+  }
+
   async function registerUser() {
     hideStatus();
     previewBox.classList.remove("show");
@@ -683,20 +721,16 @@ textarea{
 
       console.log("Réponse API inscription :", response.data);
 
-      let token = null;
-      if (response.data && response.data.data) {
-        try {
-          const parsed = JSON.parse(response.data.data);
-          token = parsed.token || null;
-        } catch (e) {
-          console.log("Impossible de parser la réponse token :", e);
-        }
+      const insertionPayload = response?.data?.data;
+      const insertionToken = extractTokenFromPayload(insertionPayload);
+      const token = insertionToken || await requestTokenForCredentials(email, password);
+
+      if (!token) {
+        showStatus("Le compte semble créé, mais la connexion automatique a échoué. Vérifiez vos identifiants sur la page Connexion.", "error");
+        return;
       }
 
-      if (token) {
-        localStorage.setItem("token", token);
-      }
-
+      localStorage.setItem("token", token);
       localStorage.setItem("userEmail", email);
       saveDraft();
 
@@ -752,9 +786,9 @@ textarea{
     const wasEditingSavedAd = Boolean(existingAd);
     const body = {
       request: wasEditingSavedAd ? "update" : "insert",
-      collection: "annonce",
+      collection: OFFER_COLLECTION,
       token: token,
-      data: existingAd?._id ? { ...adData, _id: existingAd._id } : adData
+      data: existingAd?._id ? { ...adData, _id: existingAd._id, mail: localStorage.getItem("userEmail") || "" } : { ...adData, mail: localStorage.getItem("userEmail") || "" }
     };
 
     try {
@@ -875,9 +909,9 @@ textarea{
 
     const body = {
       request: "find",
-      collection: "annonce",
+      collection: OFFER_COLLECTION,
       token: token,
-      data: {}
+      data: { mail: localStorage.getItem("userEmail") || "" }
     };
 
     try {
