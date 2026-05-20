@@ -460,6 +460,8 @@ textarea{
               <button class="btn btn-form btn-secondary" type="button" id="backBtn">Retour</button>
               <button class="btn btn-form btn-secondary" type="button" id="clearDraftBtn">Effacer le brouillon</button>
               <button class="btn btn-form" type="button" id="previewBtn">Voir mon annonce</button>
+              <button class="btn btn-form btn-secondary" type="button" id="viewSavedAdBtn">Consulter l'annonce enregistrée</button>
+              <button class="btn btn-form" type="button" id="submitAdBtn">Enregistrer dans l'API</button>
             </div>
           </section>
         </form>
@@ -525,13 +527,16 @@ textarea{
   const registerBtn = document.getElementById("registerBtn");
   const backBtn = document.getElementById("backBtn");
   const previewBtn = document.getElementById("previewBtn");
+  const viewSavedAdBtn = document.getElementById("viewSavedAdBtn");
   const clearDraftBtn = document.getElementById("clearDraftBtn");
+  const submitAdBtn = document.getElementById("submitAdBtn");
 
   const registerEmail = document.getElementById("registerEmail");
   const registerPassword = document.getElementById("registerPassword");
   const statusBox = document.getElementById("statusBox");
   const previewBox = document.getElementById("previewBox");
   const resumeNotice = document.getElementById("resumeNotice");
+  let existingAd = null;
 
   const adFieldIds = [
     "nom",
@@ -715,6 +720,82 @@ textarea{
     }
   }
 
+  function validateAdData(adData) {
+    if (!adData.nom) return "Veuillez renseigner votre nom.";
+    if (!adData.prenom) return "Veuillez renseigner votre prénom.";
+    if (!adData.entreprise) return "Veuillez renseigner le nom de l'entreprise.";
+    if (!adData.activite) return "Veuillez sélectionner une activité.";
+    if (!/^[0-9]{5}$/.test(adData.cp)) return "Le code postal doit contenir 5 chiffres.";
+    if (!adData.ville) return "Veuillez renseigner votre ville.";
+    if (!adData.adresse) return "Veuillez renseigner votre adresse.";
+    return null;
+  }
+
+  async function submitAd() {
+    hideStatus();
+    previewBox.classList.remove("show");
+
+    const token = localStorage.getItem("token");
+    if (!token) {
+      showStatus("Token introuvable. Créez d'abord un compte avant de publier une annonce.", "error");
+      go(1);
+      return;
+    }
+
+    const adData = getDraftData();
+    const validationError = validateAdData(adData);
+    if (validationError) {
+      showStatus(validationError, "error");
+      return;
+    }
+
+    const wasEditingSavedAd = Boolean(existingAd);
+    const body = {
+      request: wasEditingSavedAd ? "update" : "insert",
+      collection: "annonce",
+      token: token,
+      data: existingAd?._id ? { ...adData, _id: existingAd._id } : adData
+    };
+
+    try {
+      submitAdBtn.disabled = true;
+      submitAdBtn.textContent = "Enregistrement...";
+      showStatus("Enregistrement de votre annonce dans l'API...", "info");
+
+      const response = await axios.post(API_URL, body, {
+        headers: {
+          "Content-Type": "application/json"
+        }
+      });
+
+      console.log("Réponse API annonce :", response.data);
+      existingAd = {
+        _id: existingAd?._id || response?.data?._id || null,
+        ...adData
+      };
+      setSubmitButtonLabel();
+      clearDraft();
+      showStatus(
+        wasEditingSavedAd ? "Annonce mise à jour avec succès." : "Annonce enregistrée avec succès dans l'API.",
+        "success"
+      );
+    } catch (error) {
+      console.error("Erreur API annonce :", error);
+
+      if (error.response && error.response.data) {
+        const apiError = typeof error.response.data === "string"
+          ? error.response.data
+          : JSON.stringify(error.response.data);
+        showStatus("Erreur API : " + apiError, "error");
+      } else {
+        showStatus("Erreur : " + error.message, "error");
+      }
+    } finally {
+      submitAdBtn.disabled = false;
+      setSubmitButtonLabel();
+    }
+  }
+
   function buildPreview() {
     saveDraft();
 
@@ -748,6 +829,82 @@ textarea{
     });
   }
 
+  function parseApiData(payload) {
+    if (payload === null || payload === undefined) return null;
+    if (typeof payload === "string") {
+      try {
+        return JSON.parse(payload);
+      } catch {
+        return payload;
+      }
+    }
+    return payload;
+  }
+
+  function mapApiAd(rawAd) {
+    if (!rawAd || typeof rawAd !== "object") return null;
+    return {
+      _id: rawAd._id || rawAd.id || null,
+      nom: String(rawAd.nom || "").trim(),
+      prenom: String(rawAd.prenom || "").trim(),
+      entreprise: String(rawAd.entreprise || "").trim(),
+      activite: String(rawAd.activite || "Jardin").trim(),
+      cp: String(rawAd.cp || "").trim(),
+      ville: String(rawAd.ville || "").trim(),
+      adresse: String(rawAd.adresse || "").trim()
+    };
+  }
+
+  function fillAdForm(ad) {
+    if (!ad) return;
+    document.getElementById("nom").value = ad.nom || "";
+    document.getElementById("prenom").value = ad.prenom || "";
+    document.getElementById("entreprise").value = ad.entreprise || "";
+    document.getElementById("activite").value = ad.activite || "Jardin";
+    document.getElementById("cp").value = ad.cp || "";
+    document.getElementById("ville").value = ad.ville || "";
+    document.getElementById("adresse").value = ad.adresse || "";
+  }
+
+  function setSubmitButtonLabel() {
+    submitAdBtn.textContent = existingAd ? "Mettre à jour l'annonce" : "Enregistrer dans l'API";
+  }
+
+  async function loadSavedAd(token) {
+    if (!token) return;
+
+    const body = {
+      request: "find",
+      collection: "annonce",
+      token: token,
+      data: {}
+    };
+
+    try {
+      const response = await axios.post(API_URL, body, {
+        headers: { "Content-Type": "application/json" }
+      });
+
+      const payload = parseApiData(response?.data?.data);
+      const candidates = Array.isArray(payload)
+        ? payload
+        : (payload && typeof payload === "object" ? [payload] : []);
+      if (!candidates.length) return;
+
+      const saved = mapApiAd(candidates[0]);
+      if (!saved) return;
+
+      existingAd = saved;
+      fillAdForm(saved);
+      setSubmitButtonLabel();
+      saveDraft();
+      go(2);
+      showStatus("Annonce enregistrée retrouvée. Vous pouvez la consulter et la modifier.", "info");
+    } catch (error) {
+      console.error("Impossible de charger l'annonce existante :", error);
+    }
+  }
+
   registerBtn?.addEventListener("click", registerUser);
 
   backBtn?.addEventListener("click", () => {
@@ -758,6 +915,17 @@ textarea{
   });
 
   previewBtn?.addEventListener("click", buildPreview);
+  viewSavedAdBtn?.addEventListener("click", () => {
+    if (!existingAd) {
+      showStatus("Aucune annonce enregistrée trouvée pour le moment.", "info");
+      return;
+    }
+
+    fillAdForm(existingAd);
+    buildPreview();
+    showStatus("Voici votre annonce enregistrée. Vous pouvez la modifier puis cliquer sur Mettre à jour.", "info");
+  });
+  submitAdBtn?.addEventListener("click", submitAd);
 
   clearDraftBtn?.addEventListener("click", () => {
     clearDraft();
@@ -810,9 +978,11 @@ textarea{
       go(2);
       showStatus("Vous êtes connecté. Vous pouvez reprendre votre annonce.", "info");
     }
+    loadSavedAd(savedToken);
   }
 
   bindDraftAutosave();
+  setSubmitButtonLabel();
   render();
 })();
 </script>
