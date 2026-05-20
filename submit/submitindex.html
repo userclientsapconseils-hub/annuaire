@@ -513,14 +513,13 @@ textarea{
 </section>
 
 <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script src="../connect/api.js"></script>
 
 <script>
 (() => {
   let currentStep = 1;
 
-  const API_URL = "https://de3qg7ntqblkinxmxfhqoisuhi0pckix.lambda-url.eu-west-3.on.aws/";
   const DRAFT_KEY = "adDraft";
-  const OFFER_COLLECTION = "publicOffer";
   const form = document.getElementById("multiStepForm");
   const steps = Array.from(form.querySelectorAll(".step"));
   const dots = Array.from(document.querySelectorAll(".dot[data-dot]"));
@@ -665,20 +664,7 @@ textarea{
   }
 
   async function requestTokenForCredentials(email, password) {
-    const body = {
-      request: "token",
-      collection: "user",
-      data: {
-        mail: email,
-        password: password
-      }
-    };
-
-    const response = await axios.post(API_URL, body, {
-      headers: { "Content-Type": "application/json" }
-    });
-
-    return extractTokenFromPayload(response?.data?.data);
+    return ApiClient.login(email, password);
   }
 
   async function registerUser() {
@@ -698,30 +684,15 @@ textarea{
       return;
     }
 
-    const body = {
-      request: "insert",
-      collection: "user",
-      data: {
-        mail: email,
-        password: password,
-        type: "pro"
-      }
-    };
-
     try {
       registerBtn.disabled = true;
       registerBtn.textContent = "Création en cours...";
       showStatus("Création de votre compte...", "info");
 
-      const response = await axios.post(API_URL, body, {
-        headers: {
-          "Content-Type": "application/json"
-        }
-      });
+      const insertionPayload = await ApiClient.registerUser(email, password, "pro");
 
-      console.log("Réponse API inscription :", response.data);
+      console.log("Réponse API inscription :", insertionPayload);
 
-      const insertionPayload = response?.data?.data;
       const insertionToken = extractTokenFromPayload(insertionPayload);
       const token = insertionToken || await requestTokenForCredentials(email, password);
 
@@ -784,27 +755,18 @@ textarea{
     }
 
     const wasEditingSavedAd = Boolean(existingAd);
-    const body = {
-      request: wasEditingSavedAd ? "update" : "insert",
-      collection: OFFER_COLLECTION,
-      token: token,
-      data: existingAd?._id ? { ...adData, _id: existingAd._id, mail: localStorage.getItem("userEmail") || "" } : { ...adData, mail: localStorage.getItem("userEmail") || "" }
-    };
+    const payload = existingAd?._id ? { ...adData, _id: existingAd._id, mail: localStorage.getItem("userEmail") || "" } : { ...adData, mail: localStorage.getItem("userEmail") || "" };
 
     try {
       submitAdBtn.disabled = true;
       submitAdBtn.textContent = "Enregistrement...";
       showStatus("Enregistrement de votre annonce dans l'API...", "info");
 
-      const response = await axios.post(API_URL, body, {
-        headers: {
-          "Content-Type": "application/json"
-        }
-      });
+      const response = await ApiClient.saveOffer(token, payload, wasEditingSavedAd);
 
-      console.log("Réponse API annonce :", response.data);
+      console.log("Réponse API annonce :", response);
       existingAd = {
-        _id: existingAd?._id || response?.data?._id || null,
+        _id: existingAd?._id || response?._id || null,
         ...adData
       };
       setSubmitButtonLabel();
@@ -907,19 +869,8 @@ textarea{
   async function loadSavedAd(token) {
     if (!token) return;
 
-    const body = {
-      request: "find",
-      collection: OFFER_COLLECTION,
-      token: token,
-      data: { mail: localStorage.getItem("userEmail") || "" }
-    };
-
     try {
-      const response = await axios.post(API_URL, body, {
-        headers: { "Content-Type": "application/json" }
-      });
-
-      const payload = parseApiData(response?.data?.data);
+      const payload = parseApiData(await ApiClient.findOfferByMail(token, localStorage.getItem("userEmail") || ""));
       const candidates = Array.isArray(payload)
         ? payload
         : (payload && typeof payload === "object" ? [payload] : []);
