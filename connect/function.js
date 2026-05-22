@@ -1,6 +1,8 @@
-console.log('initialisation fonction interne connect !')
-
-const SESSION_KEY = "authSession";
+function tokenCreate(){
+  console.log('init')
+}
+  
+/*const SESSION_KEY = "authSession";
 const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 jours
 
 const loginForm = document.getElementById("loginForm");
@@ -118,4 +120,4 @@ if (isSessionActive(existingSession)) {
 const savedEmail = localStorage.getItem("userEmail");
 if (savedEmail) {
   emailInput.value = savedEmail;
-}
+}*/
