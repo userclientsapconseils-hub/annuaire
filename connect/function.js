@@ -22,7 +22,7 @@ async function checkGuest(guest){
       .catch(response=>{throw "id"})
     //if success
     guest.message.textContent = "Votre token est "+response.data.data
-    guest.message.className = "status success"
+    guest.message.className = "status show success"
     cookieWrite(response.data.data)
     return true
   //if fail
@@ -41,7 +41,7 @@ function changementStyleBoutton(connectionEnCours){
   if(connectionEnCours){
     guest.button.disabled = true;
     guest.button.textContent = "Connexion en cours...";
-    guest.button.message.textContent = ""
+    guest.message.className = "statut"
   }else{
     guest.button.disabled = false
     guest.button.textContent = "Se connecter"
@@ -77,7 +77,7 @@ async function main(){
       serveur:"Veuillez vérifier votre connexion / nos serveurs connaissent une pause, veuillez réessayer plus tard",
     }
     guest.message.textContent=messageList[e]
-    guest.message.className = "status error"
+    guest.message.className = "status show error"
     changementStyleBoutton(false)
   }    
 }
