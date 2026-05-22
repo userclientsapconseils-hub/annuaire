@@ -25,8 +25,8 @@ async function checkGuest(guest){
 function tokenCreate(){
   //definition des variables
   let guest = {
-    mail: document.getElementById("email"),
-    password: document.getElementById("password"),
+    mail: document.getElementById("email").value,
+    password: document.getElementById("password").value,
     message: document.getElementById("message"),
     token: '',
     user: {},
