@@ -32,7 +32,7 @@ async function checkGuest(guest){
 }
 
 async function main(){
-  console.log('init 2')
+  console.log('init 3')
   //definition des variables
   let guest = {
     mail: document.getElementById("email").value,
