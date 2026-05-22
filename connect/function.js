@@ -38,6 +38,18 @@ function cookieWrite(token){
   console.log(document.cookie)
 }
 
+function changementStyleBoutton(connectionEnCours){
+  if(connectionEnCours){
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Connexion en cours...";
+    guest.message.textContent = ""
+  }else{
+    submitBtn.disabled = false
+    submitBtn.textContent = "Connexion en cours..."
+    guest.message.textContent = ""
+  }
+}
+
 async function main(){
   console.log('init 3')
   //definition des variables
@@ -50,6 +62,7 @@ async function main(){
   }
   console.log(guest)
   try{
+    changementStyleBoutton(true)
     //on regarde dans les cookies si un token existe déjà, si c'est le cas on connecte la personne
     await userAlreadyConnected(guest.token)
     //sinon check des champs
@@ -57,7 +70,7 @@ async function main(){
     if(!guest.password){throw "password"}
     //connexion
     await checkGuest(guest)
-    
+    changementStyleBoutton(false)
   }catch(e){
     const messageList={
       mail:"Veuillez indiquer votre adresse mail",
@@ -67,6 +80,7 @@ async function main(){
     }
     guest.message.textContent=messageList[e]
     guest.message.className = "status error"
+    changementStyleBoutton(false)
   }    
 }
   
