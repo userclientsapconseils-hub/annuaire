@@ -62,7 +62,7 @@
       box-shadow: 0 0 0 3px rgba(239, 68, 68, .2);
     }
 
-    .btn {
+    .button {
       display: inline-flex;
       justify-content: center;
       align-items: center;
@@ -78,7 +78,7 @@
       cursor: pointer;
     }
 
-    .btn:disabled {
+    .button:disabled {
       opacity: .7;
       cursor: not-allowed;
     }
