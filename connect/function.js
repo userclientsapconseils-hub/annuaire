@@ -39,7 +39,7 @@ function cookieWrite(token){
 
 function changementStyleBoutton(guest, connectionEnCours){
   if(connectionEnCours){
-    guest.button.disabled = true;
+    guest.button.style.disabled = true;
     guest.button.textContent = "Connexion en cours...";
     guest.message.className = "statut"
   }else{
@@ -47,6 +47,9 @@ function changementStyleBoutton(guest, connectionEnCours){
     guest.button.textContent = "Se connecter"
   }
 }
+
+
+
 
 async function main(){
   console.log('init 3')
