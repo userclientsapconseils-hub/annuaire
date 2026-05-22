@@ -31,7 +31,7 @@ async function checkGuest(guest){
   }
 }
 
-function main(){
+async function main(){
   console.log('init 2')
   //definition des variables
   let guest = {
@@ -44,12 +44,12 @@ function main(){
   console.log(guest)
   try{
     //on regarde dans les cookies si un token existe déjà, si c'est le cas on connecte la personne
-    userAlreadyConnected(guest.token)
+    await userAlreadyConnected(guest.token)
     //sinon check des champs
     if(!guest.mail){throw "mail"}
     if(!guest.password){throw "password"}
     //connexion
-    checkGuest(guest)
+    await checkGuest(guest)
     
   }catch(e){
     const messageList={
