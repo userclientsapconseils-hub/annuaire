@@ -52,7 +52,7 @@ function changementStyleBoutton(guest, connectionEnCours){
 
 
 async function main(){
-  console.log('init 3')
+  console.log('init 4')
   //definition des variables
   let guest = {
     mail: document.getElementById("email").value,
