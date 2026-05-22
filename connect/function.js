@@ -22,7 +22,8 @@ async function checkGuest(guest){
       .catch(response=>{throw "id"})
     console.log(response.data)
     guest.message.textContent = "Votre token est "+response.data.data
-    response true
+    guest.message.className = "status success"
+    return true
   
   }catch(e){
     if(e=="id"){throw e}
@@ -58,6 +59,7 @@ function main(){
       serveur:"Veuillez vérifier votre connexion / nos serveurs connaissent une pause, veuillez réessayer plus tard",
     }
     guest.message.textContent=messageList[e]
+    guest.message.className = "status error"
   }    
 }
   
