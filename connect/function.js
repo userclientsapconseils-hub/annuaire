@@ -1,7 +1,7 @@
 function userAlreadyConnected(token){
   //on parse le token
-  if (!rawSession) {return false}
-  else{token = JSON.parse(rawSession)}
+  if (!token) {return false}
+  else{token = JSON.parse(token)}
   return true
   //a finaliser
 }
