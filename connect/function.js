@@ -35,8 +35,8 @@ function tokenCreate(){
   //on regarde dans les cookies si un token existe déjà, si c'est le cas on connecte la personne
   userAlreadyConnected(guest.token)
   //sinon check des champs
-  if(!mail){message.textContent = "Veuillez indiquer votre adresse mail"; return false}
-  if(!password){message.textContent = "Veuillez indiquer votre mot de passe"; return false}
+  if(!guest.mail){message.textContent = "Veuillez indiquer votre adresse mail"; return false}
+  if(!guest.password){message.textContent = "Veuillez indiquer votre mot de passe"; return false}
   //connexion
   checkGuest(guest)
   
