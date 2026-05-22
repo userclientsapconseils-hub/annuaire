@@ -33,9 +33,8 @@ async function checkGuest(guest){
 }
 
 function cookieWrite(token){
-  console.log(document.cookie)
   document.cookie = "token="+token+";"
-  console.log(document.cookie)
+  console.log(decodeURIComponent(document.cookie))
 }
 
 function changementStyleBoutton(connectionEnCours){
@@ -45,8 +44,7 @@ function changementStyleBoutton(connectionEnCours){
     guest.message.textContent = ""
   }else{
     submitBtn.disabled = false
-    submitBtn.textContent = "Connexion en cours..."
-    guest.message.textContent = ""
+    submitBtn.textContent = "Se connecter"
   }
 }
 
