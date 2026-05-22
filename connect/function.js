@@ -19,7 +19,7 @@ async function checkGuest(guest){
     }
     let response = await axios({method:'post', url:url, headers:{}, data:body}).then(response => {return response})
     console.log(response.data)
-    document.getElementById('resultat').innerHTML = JSON.stringify(response.data)
+    guest.message.textContent = JSON.stringify(response.data)
 }
 
 function tokenCreate(){
@@ -35,8 +35,8 @@ function tokenCreate(){
   //on regarde dans les cookies si un token existe déjà, si c'est le cas on connecte la personne
   userAlreadyConnected(guest.token)
   //sinon check des champs
-  if(!guest.mail){message.textContent = "Veuillez indiquer votre adresse mail"; return false}
-  if(!guest.password){message.textContent = "Veuillez indiquer votre mot de passe"; return false}
+  if(!guest.mail){guest.message.textContent = "Veuillez indiquer votre adresse mail"; return false}
+  if(!guest.password){guest.message.textContent = "Veuillez indiquer votre mot de passe"; return false}
   //connexion
   checkGuest(guest)
   
