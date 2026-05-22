@@ -32,17 +32,17 @@ async function checkGuest(guest){
 }
 
 function main(){
+  console.log('init 2')
+  //definition des variables
+  let guest = {
+    mail: document.getElementById("email").value,
+    password: document.getElementById("password").value,
+    message: document.getElementById("message"),
+    token: '',
+    user: {},
+  }
+  console.log(guest)
   try{
-    console.log('init 2')
-    //definition des variables
-    let guest = {
-      mail: document.getElementById("email").value,
-      password: document.getElementById("password").value,
-      message: document.getElementById("message"),
-      token: '',
-      user: {},
-    }
-    console.log(guest)
     //on regarde dans les cookies si un token existe déjà, si c'est le cas on connecte la personne
     userAlreadyConnected(guest.token)
     //sinon check des champs
