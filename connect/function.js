@@ -6,22 +6,40 @@ function userAlreadyConnected(token){
   //a finaliser
 }
 
+async function checkGuest(guest){
+  let url = 'https://de3qg7ntqblkinxmxfhqoisuhi0pckix.lambda-url.eu-west-3.on.aws/' //mongoProd
+  let body = {
+      request:'token',
+      collection:'user',
+      //token:'173492289355',
+      data:{
+        mail:'test@yopmail.com',
+        password:'coucou',
+      }
+    }
+    let response = await axios({method:'post', url:url, headers:{}, data:body}).then(response => {return response})
+    console.log(response.data)
+    document.getElementById('resultat').innerHTML = JSON.stringify(response.data)
+  }
+}
+
 function tokenCreate(){
   //definition des variables
-  let visit = {
+  let guest = {
     mail: document.getElementById("email"),
     password: document.getElementById("password"),
     message: document.getElementById("message"),
     token: localStorage.getItem(SESSION_KEY),
     user: {},
   }
-  console.log(visit)
+  console.log(guest)
   //on regarde dans les cookies si un token existe déjà, si c'est le cas on connecte la personne
-  userAlreadyConnected(visit.token)
+  userAlreadyConnected(guest.token)
   //sinon check des champs
   if(!mail){message.textContent = "Veuillez indiquer votre adresse mail"; return false}
   if(!password){message.textContent = "Veuillez indiquer votre mot de passe"; return false}
   //connexion
+  checkGuest(guest)
   
 }
   
