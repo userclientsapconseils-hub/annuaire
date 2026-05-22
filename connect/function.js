@@ -1,3 +1,5 @@
+console.log('initialisation fonction interne connect !')
+
 const SESSION_KEY = "authSession";
 const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 jours
 
@@ -7,7 +9,6 @@ const passwordInput = document.getElementById("password");
 const submitBtn = document.getElementById("submitBtn");
 const message = document.getElementById("message");
 
-console.log('initialisation fonction interne connect !')
 
 function showMessage(text, type) {
   message.className = "status show " + type;
