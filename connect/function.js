@@ -29,7 +29,7 @@ function tokenCreate(){
     mail: document.getElementById("email"),
     password: document.getElementById("password"),
     message: document.getElementById("message"),
-    token: localStorage.getItem(SESSION_KEY),
+    token: '',
     user: {},
   }
   console.log(guest)
