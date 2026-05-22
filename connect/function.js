@@ -19,34 +19,46 @@ async function checkGuest(guest){
     }
     let response = await axios({method:'post', url:url, headers:{}, data:body})
       .then(response => {return response})
-      .catch(response=>{throw "Le mail ou le mot de passe indiqué ne correspondent pas."})
+      .catch(response=>{throw "id"})
     console.log(response.data)
     guest.message.textContent = "Votre token est "+response.data.data
+    response true
+  
   }catch(e){
-    console.log(e)
-    guest.message.textContent = (e)
+    if(e=="id"){throw e}
+    else{throw "serveur"}
   }
 }
 
 function main(){
-  console.log('init 2')
-  //definition des variables
-  let guest = {
-    mail: document.getElementById("email").value,
-    password: document.getElementById("password").value,
-    message: document.getElementById("message"),
-    token: '',
-    user: {},
-  }
-  console.log(guest)
-  //on regarde dans les cookies si un token existe déjà, si c'est le cas on connecte la personne
-  userAlreadyConnected(guest.token)
-  //sinon check des champs
-  if(!guest.mail){guest.message.textContent = "Veuillez indiquer votre adresse mail"; console.log('mail manquant'); return false}
-  if(!guest.password){guest.message.textContent = "Veuillez indiquer votre mot de passe"; console.log('password manquant'); return false}
-  //connexion
-  checkGuest(guest)
-  
+  try{
+    console.log('init 2')
+    //definition des variables
+    let guest = {
+      mail: document.getElementById("email").value,
+      password: document.getElementById("password").value,
+      message: document.getElementById("message"),
+      token: '',
+      user: {},
+    }
+    console.log(guest)
+    //on regarde dans les cookies si un token existe déjà, si c'est le cas on connecte la personne
+    userAlreadyConnected(guest.token)
+    //sinon check des champs
+    if(!guest.mail){throw "mail"}
+    if(!guest.password){throw "password"}
+    //connexion
+    checkGuest(guest)
+    
+  }catch(e){
+    const messageList={
+      mail:"Veuillez indiquer votre adresse mail",
+      password:"Veuillez indiquer votre mot de passe",
+      id:"Le couple mail/mot de passe ne correpond pas",
+      serveur:"Veuillez vérifier votre connexion / nos serveurs connaissent une pause, veuillez réessayer plus tard",
+    }
+    guest.message.textContent=messageList[e]
+  }    
 }
   
 /*const SESSION_KEY = "authSession";
