@@ -20,7 +20,6 @@ async function checkGuest(guest){
     let response = await axios({method:'post', url:url, headers:{}, data:body}).then(response => {return response})
     console.log(response.data)
     document.getElementById('resultat').innerHTML = JSON.stringify(response.data)
-  }
 }
 
 function tokenCreate(){
