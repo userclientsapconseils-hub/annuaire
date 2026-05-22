@@ -1,5 +1,7 @@
 function tokenCreate(){
   console.log('init')
+  const emailInput = document.getElementById("email");
+  console.log(emailInput)
 }
   
 /*const SESSION_KEY = "authSession";
