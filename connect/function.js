@@ -24,7 +24,7 @@ async function checkGuest(guest){
     guest.message.textContent = "Votre token est "+response.data.data
     guest.message.className = "status show success"
     cookieWrite(response.data.data)
-    return true
+    token = response.data.data
   //if fail
   }catch(e){
     if(e=="id"){throw e}
@@ -61,7 +61,7 @@ async function main(){
     button: document.getElementById("button"),
     message: document.getElementById("message"),
   }
-  console.log(guest)
+  //console.log(guest)
   try{
     changementStyleBoutton(guest, true)
     //on regarde dans les cookies si un token existe déjà, si c'est le cas on connecte la personne
@@ -72,6 +72,7 @@ async function main(){
     //connexion
     await checkGuest(guest)
     changementStyleBoutton(guest, false)
+    return guest.token
   }catch(e){
     const messageList={
       mail:"Veuillez indiquer votre adresse mail",
