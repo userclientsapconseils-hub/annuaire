@@ -37,7 +37,7 @@ function cookieWrite(token){
   console.log(decodeURIComponent(document.cookie))
 }
 
-function changementStyleBoutton(connectionEnCours){
+function changementStyleBoutton(guest, connectionEnCours){
   if(connectionEnCours){
     guest.button.disabled = true;
     guest.button.textContent = "Connexion en cours...";
@@ -60,7 +60,7 @@ async function main(){
   }
   console.log(guest)
   try{
-    changementStyleBoutton(true)
+    changementStyleBoutton(guest, true)
     //on regarde dans les cookies si un token existe déjà, si c'est le cas on connecte la personne
     await userAlreadyConnected(guest.token)
     //sinon check des champs
@@ -68,7 +68,7 @@ async function main(){
     if(!guest.password){throw "password"}
     //connexion
     await checkGuest(guest)
-    changementStyleBoutton(false)
+    changementStyleBoutton(guest, false)
   }catch(e){
     const messageList={
       mail:"Veuillez indiquer votre adresse mail",
