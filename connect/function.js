@@ -39,12 +39,12 @@ function cookieWrite(token){
 
 function changementStyleBoutton(connectionEnCours){
   if(connectionEnCours){
-    submitBtn.disabled = true;
-    submitBtn.textContent = "Connexion en cours...";
-    guest.message.textContent = ""
+    guest.button.disabled = true;
+    guest.button.textContent = "Connexion en cours...";
+    guest.button.message.textContent = ""
   }else{
-    submitBtn.disabled = false
-    submitBtn.textContent = "Se connecter"
+    guest.button.disabled = false
+    guest.button.textContent = "Se connecter"
   }
 }
 
@@ -54,9 +54,9 @@ async function main(){
   let guest = {
     mail: document.getElementById("email").value,
     password: document.getElementById("password").value,
+    token: '',  
+    button: document.getElementById("button"),
     message: document.getElementById("message"),
-    token: '',
-    user: {},
   }
   console.log(guest)
   try{
