@@ -1,7 +1,28 @@
+function checkToken(token){
+  //on parse le token
+  if (!rawSession) {return false}
+  else{token = JSON.parse(rawSession)}
+  return true
+  //a finaliser
+}
+
 function tokenCreate(){
-  console.log('init')
-  const emailInput = document.getElementById("email");
-  console.log(emailInput)
+  //definition des variables
+  let visit = {
+    mail: document.getElementById("email"),
+    password: document.getElementById("password"),
+    message: document.getElementById("message"),
+    token: localStorage.getItem(SESSION_KEY),
+    user: {},
+  }
+  console.log(visit)
+  //on regarde dans les cookies si un token existe déjà, si c'est le cas on connecte la personne
+  checkToken(visit.token)
+  //sinon check des champs
+  if(!mail){message.textContent = "Veuillez indiquer votre adresse mail"; return false}
+  if(!password){message.textContent = "Veuillez indiquer votre mot de passe"; return false}
+  //connexion
+  
 }
   
 /*const SESSION_KEY = "authSession";
