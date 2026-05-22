@@ -28,7 +28,7 @@ async function checkGuest(guest){
   }
 }
 
-function tokenCreate(){
+function main(){
   console.log('init 2')
   //definition des variables
   let guest = {
