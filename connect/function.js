@@ -20,15 +20,22 @@ async function checkGuest(guest){
     let response = await axios({method:'post', url:url, headers:{}, data:body})
       .then(response => {return response})
       .catch(response=>{throw "id"})
-    console.log(response.data)
+    //if success
     guest.message.textContent = "Votre token est "+response.data.data
     guest.message.className = "status success"
+    cookieWrite(response.data.data)
     return true
-  
+  //if fail
   }catch(e){
     if(e=="id"){throw e}
     else{throw "serveur"}
   }
+}
+
+function cookieWrite(token){
+  console.log(document.cookie)
+  document.cookie = "token="+token+";"
+  console.log(document.cookie)
 }
 
 async function main(){
