@@ -1,3 +1,4 @@
 function tokenCreate(){
    console.log('coucou')
 }
+tokenCreate()
