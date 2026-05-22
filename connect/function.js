@@ -41,7 +41,7 @@ function changementStyleBoutton(guest, connectionEnCours){
   if(connectionEnCours){
     guest.button.className = "button disabled";
     guest.button.textContent = "Connexion en cours...";
-    guest.message.className = "statut"
+    guest.message.className = "status"
   }else{
     guest.button.className = "button";
     guest.button.textContent = "Se connecter"
@@ -52,7 +52,7 @@ function changementStyleBoutton(guest, connectionEnCours){
 
 
 async function main(){
-  console.log('init 4')
+  console.log('v5')
   //definition des variables
   let guest = {
     mail: document.getElementById("email").value,
