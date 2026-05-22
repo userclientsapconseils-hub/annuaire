@@ -13,8 +13,8 @@ async function checkGuest(guest){
       collection:'user',
       //token:'173492289355',
       data:{
-        mail:'test@yopmail.com',
-        password:'coucou',
+        mail:guest.mail,
+        password:guest.password,
       }
     }
     let response = await axios({method:'post', url:url, headers:{}, data:body}).then(response => {return response})
