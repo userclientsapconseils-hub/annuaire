@@ -1,4 +1,4 @@
-function checkToken(token){
+function userAlreadyConnected(token){
   //on parse le token
   if (!rawSession) {return false}
   else{token = JSON.parse(rawSession)}
@@ -17,7 +17,7 @@ function tokenCreate(){
   }
   console.log(visit)
   //on regarde dans les cookies si un token existe déjà, si c'est le cas on connecte la personne
-  checkToken(visit.token)
+  userAlreadyConnected(visit.token)
   //sinon check des champs
   if(!mail){message.textContent = "Veuillez indiquer votre adresse mail"; return false}
   if(!password){message.textContent = "Veuillez indiquer votre mot de passe"; return false}
