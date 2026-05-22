@@ -7,19 +7,25 @@ function userAlreadyConnected(token){
 }
 
 async function checkGuest(guest){
+  try{
   let url = 'https://de3qg7ntqblkinxmxfhqoisuhi0pckix.lambda-url.eu-west-3.on.aws/' //mongoProd
   let body = {
       request:'token',
       collection:'user',
-      //token:'173492289355',
       data:{
         mail:guest.mail,
         password:guest.password,
       }
     }
-    let response = await axios({method:'post', url:url, headers:{}, data:body}).then(response => {return response})
+    let response = await axios({method:'post', url:url, headers:{}, data:body})
+      .then(response => {return response})
+      .catch(response=>{throw "Le mail ou le mot de passe indiqué ne correspondent pas."})
     console.log(response.data, response.data.data)
     guest.message.textContent = JSON.stringify(response.data)
+  }catch(e){
+    console.log(e)
+    guest.message.textContent = (e)
+  }
 }
 
 function tokenCreate(){
