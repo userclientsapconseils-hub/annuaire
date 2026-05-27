@@ -24,7 +24,7 @@ async function checkGuest(guest){
     guest.message.textContent = "Votre token est "+response.data.data
     guest.message.className = "status show success"
     cookieWrite(response.data.data)
-    token = response.data.data
+    guest.token = response.data.data
   //if fail
   }catch(e){
     if(e=="id"){throw e}
@@ -72,6 +72,9 @@ async function main(){
     //connexion
     await checkGuest(guest)
     changementStyleBoutton(guest, false)
+    if (guest.token) {
+      window.location.href = "../espacePersonnel/index.html"
+    }
     return guest.token
   }catch(e){
     const messageList={
