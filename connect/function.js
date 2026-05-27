@@ -73,7 +73,7 @@ async function main(){
     await checkGuest(guest)
     changementStyleBoutton(guest, false)
     if (token) {
-      window.location.href = "../espacePersonnel/index.html"
+      window.location.href = "https://userclientsapconseils-hub.github.io/annuaire/espacePersonnel/index.html"
     }
     return guest.token
   }catch(e){
