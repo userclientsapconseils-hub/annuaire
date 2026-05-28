@@ -6,6 +6,29 @@ function userAlreadyConnected(token){
   //a finaliser
 }
 
+
+function extractToken(payload){
+  if (!payload) return "";
+
+  if (typeof payload === "string") {
+    try {
+      const parsed = JSON.parse(payload);
+      if (parsed && typeof parsed === "object") {
+        return parsed.token || parsed.data || "";
+      }
+      return payload;
+    } catch (_error) {
+      return payload;
+    }
+  }
+
+  if (typeof payload === "object") {
+    return payload.token || payload.data || "";
+  }
+
+  return "";
+}
+
 async function checkGuest(guest){
   try{
   let url = 'https://de3qg7ntqblkinxmxfhqoisuhi0pckix.lambda-url.eu-west-3.on.aws/' //mongoProd
@@ -21,10 +44,11 @@ async function checkGuest(guest){
       .then(response => {return response})
       .catch(response=>{throw "id"})
     //if success
-    guest.message.textContent = "Votre token est "+response.data.data
+    guest.token = extractToken(response?.data?.data)
+    if (!guest.token) {throw "id"}
+    guest.message.textContent = "Connexion réussie"
     guest.message.className = "status show success"
-    cookieWrite(response.data.data)
-    token = response.data.data
+    cookieWrite(guest.token)
   //if fail
   }catch(e){
     if(e=="id"){throw e}
@@ -72,8 +96,8 @@ async function main(){
     //connexion
     await checkGuest(guest)
     changementStyleBoutton(guest, false)
-    if (token) {
-      window.location.href = "https://userclientsapconseils-hub.github.io/annuaire/espacePersonnel/index.html"
+    if (guest.token) {
+      window.location.href = "../espacePersonnel/index.html"
     }
     return guest.token
   }catch(e){
