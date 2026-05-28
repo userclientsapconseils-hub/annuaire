@@ -23,8 +23,8 @@ async function checkGuest(guest){
     //if success
     guest.message.textContent = "Votre token est "+response.data.data
     guest.message.className = "status show success"
-    cookieWrite(response.data.data)
-    token = response.data.data
+    guest.token = response.data.data
+    cookieWrite(guest.token)
   //if fail
   }catch(e){
     if(e=="id"){throw e}
@@ -72,7 +72,7 @@ async function main(){
     //connexion
     await checkGuest(guest)
     changementStyleBoutton(guest, false)
-    if (token) {
+    if (guest.token) {
       window.location.href = "https://userclientsapconseils-hub.github.io/annuaire/espacePersonnel/index.html"
     }
     return guest.token
