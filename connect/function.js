@@ -23,8 +23,8 @@ async function checkGuest(guest){
     //if success
     guest.message.textContent = "Votre token est "+response.data.data
     guest.message.className = "status show success"
-    guest.token = response.data.data
-    cookieWrite(guest.token)
+    cookieWrite(response.data.data)
+    token = response.data.data
   //if fail
   }catch(e){
     if(e=="id"){throw e}
