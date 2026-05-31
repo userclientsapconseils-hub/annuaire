@@ -935,8 +935,11 @@ textarea{
       return;
     }
 
-    const wasEditingSavedAd = Boolean(existingAd);
-    const payload = existingAd?._id ? { ...adData, _id: existingAd._id, mail: localStorage.getItem("userEmail") || "" } : { ...adData, mail: localStorage.getItem("userEmail") || "" };
+    const existingAdId = getApiRecordId(existingAd);
+    const wasEditingSavedAd = Boolean(existingAdId);
+    const payload = existingAdId
+      ? { ...adData, id: existingAdId, mail: localStorage.getItem("userEmail") || "" }
+      : { ...adData, mail: localStorage.getItem("userEmail") || "" };
 
     try {
       submitAdBtn.disabled = true;
@@ -947,7 +950,7 @@ textarea{
 
       console.log("Réponse API annonce :", response);
       existingAd = {
-        _id: existingAd?._id || response?._id || null,
+        id: existingAdId || getApiRecordId(response),
         ...adData
       };
       setSubmitButtonLabel();
@@ -1041,10 +1044,15 @@ textarea{
     return payload;
   }
 
+  function getApiRecordId(record) {
+    if (!record || typeof record !== "object") return null;
+    return record.id || record._id || null;
+  }
+
   function mapApiAd(rawAd) {
     if (!rawAd || typeof rawAd !== "object") return null;
     return {
-      _id: rawAd._id || rawAd.id || null,
+      id: getApiRecordId(rawAd),
       entreprise: String(rawAd.entreprise || "").trim(),
       activite: String(rawAd.activite || "").trim(),
       prestations: normalizePrestations(rawAd.prestations || rawAd.prestation),
