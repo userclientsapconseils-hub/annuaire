@@ -1,3 +1,6 @@
+const SESSION_KEY = "authSession";
+const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 jours
+
 function userAlreadyConnected(token){
   //on parse le token
   if (!token) {return false}
@@ -29,6 +32,19 @@ function extractToken(payload){
   return "";
 }
 
+function persistSession(token, email) {
+  const session = {
+    token,
+    email,
+    createdAt: Date.now(),
+    expiresAt: Date.now() + SESSION_TTL_MS
+  };
+
+  localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+  localStorage.setItem("token", token);
+  localStorage.setItem("userEmail", email);
+}
+
 async function checkGuest(guest){
   try{
   let url = 'https://de3qg7ntqblkinxmxfhqoisuhi0pckix.lambda-url.eu-west-3.on.aws/' //mongoProd
@@ -44,12 +60,13 @@ async function checkGuest(guest){
       .then(response => {return response})
       .catch(response=>{throw "id"})
     //if success
-    guest.token = extractToken(response?.data?.data)
-    if (!guest.token) {throw "id"}
+    const token = extractToken(response?.data?.data)
+    if (!token) {throw "id"}
+    guest.token = token
+    persistSession(token, guest.mail)
     guest.message.textContent = "Connexion réussie"
     guest.message.className = "status show success"
-    cookieWrite(response.data.data)
-    guest.token = response.data.data
+    cookieWrite(token)
   //if fail
   }catch(e){
     if(e=="id"){throw e}
@@ -58,7 +75,7 @@ async function checkGuest(guest){
 }
 
 function cookieWrite(token){
-  document.cookie = "token="+token+";"
+  document.cookie = "token="+encodeURIComponent(token)+"; path=/annuaire; SameSite=Lax; Secure"
   console.log(decodeURIComponent(document.cookie))
 }
 
@@ -77,10 +94,10 @@ function changementStyleBoutton(guest, connectionEnCours){
 
 
 async function main(){
-  console.log('v6')
+  console.log('v7')
   //definition des variables
   let guest = {
-    mail: document.getElementById("email").value,
+    mail: document.getElementById("email").value.trim(),
     password: document.getElementById("password").value,
     token: '',  
     button: document.getElementById("button"),
@@ -98,7 +115,7 @@ async function main(){
     await checkGuest(guest)
     changementStyleBoutton(guest, false)
     if (guest.token) {
-      window.location.href = "https://userclientsapconseils-hub.github.io/annuaire/espacePersonnel/index.html"
+      window.location.href = "../espacePersonnel/index.html"
     }
     return guest.token
   }catch(e){
@@ -113,6 +130,7 @@ async function main(){
     changementStyleBoutton(guest, false)
   }    
 }
+
   
 /*const SESSION_KEY = "authSession";
 const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 jours
