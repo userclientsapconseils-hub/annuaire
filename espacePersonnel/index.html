@@ -154,8 +154,6 @@
   <script>
     const SESSION_KEY = "authSession";
     const SESSION_TTL_MS = 12 * 60 * 60 * 1000; // 12 heures
-    const rawDraft = localStorage.getItem("adDraft");
-
     const userEmailEl = document.getElementById("userEmail");
     const userTokenEl = document.getElementById("userToken");
     const logoutBtn = document.getElementById("logoutBtn");
@@ -216,11 +214,18 @@
     }
 
     function hasMeaningfulDraft() {
+      const rawDraft = localStorage.getItem("adDraft");
       if (!rawDraft) return false;
 
       try {
         const draft = JSON.parse(rawDraft);
-        return Object.values(draft).some(value => String(value || "").trim() !== "");
+        return Object.values(draft).some(value => {
+          if (Array.isArray(value)) {
+            return value.some(item => Object.values(item || {}).some(itemValue => String(itemValue || "").trim() !== ""));
+          }
+
+          return String(value || "").trim() !== "";
+        });
       } catch (error) {
         console.error("Erreur lecture brouillon :", error);
         return false;
