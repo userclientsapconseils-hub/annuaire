@@ -116,6 +116,57 @@ textarea{
   min-height:100px;
   resize:vertical;
 }
+.services-table-wrap{
+  overflow-x:auto;
+}
+.services-table{
+  width:100%;
+  border-collapse:collapse;
+  border:1px solid var(--stroke);
+  border-radius:10px;
+  overflow:hidden;
+}
+.services-table th,
+.services-table td{
+  border-bottom:1px solid var(--stroke);
+  padding:10px;
+  text-align:left;
+  vertical-align:top;
+}
+.services-table th{
+  background:#f9fafb;
+  font-size:13px;
+}
+.services-table tr:last-child td{border-bottom:0}
+.services-table input{
+  min-width:160px;
+}
+.services-table .service-remove{
+  width:auto;
+  padding:9px 12px;
+  color:#991b1b;
+  background:#fee2e2;
+  border:1px solid #fecaca;
+  border-radius:8px;
+  font-weight:700;
+  cursor:pointer;
+}
+.service-actions{
+  margin-top:10px;
+}
+.service-actions .btn-form{
+  padding:10px 14px;
+}
+.preview-services{
+  width:100%;
+  border-collapse:collapse;
+}
+.preview-services th,
+.preview-services td{
+  border:1px solid #e5e7eb;
+  padding:8px 10px;
+  text-align:left;
+}
 .grid{
   display:grid;
   grid-template-columns:1fr 1fr;
@@ -416,7 +467,36 @@ textarea{
             <div class="grid">
 
               <div class="form-group">
-                <label for="nom">Nom</label>
+                <label for="entreprise">NOM de l’entreprise</label>
+                <input id="entreprise" name="entreprise" type="text" placeholder="Ex : Services Dupont">
+              </div>
+
+              <div class="form-group">
+                <label for="activite">Activité de l’entreprise</label>
+                <input id="activite" name="activite" type="text" placeholder="Ex : Nettoyage à domicile">
+              </div>
+
+              <div class="form-group full">
+                <label>Liste des prestations</label>
+                <div class="services-table-wrap">
+                  <table class="services-table" aria-label="Liste des prestations et tarifs horaires hors taxes">
+                    <thead>
+                      <tr>
+                        <th scope="col">Prestations</th>
+                        <th scope="col">Tarif/h HT</th>
+                        <th scope="col"><span class="sr-only">Action</span></th>
+                      </tr>
+                    </thead>
+                    <tbody id="prestationsBody"></tbody>
+                  </table>
+                </div>
+                <div class="service-actions">
+                  <button class="btn-form btn-secondary" type="button" id="addPrestationBtn">Ajouter une prestation</button>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="nom">NOM</label>
                 <input id="nom" name="nom" type="text" placeholder="Ex : Dupont">
               </div>
 
@@ -426,13 +506,8 @@ textarea{
               </div>
 
               <div class="form-group">
-                <label for="entreprise">Nom de l'entreprise</label>
-                <input id="entreprise" name="entreprise" type="text" placeholder="Ex : Services Dupont">
-              </div>
-
-              <div class="form-group">
-                <label for="cp">Code Postal</label>
-                <input id="cp" name="cp" type="text" placeholder="Ex : 38000">
+                <label for="cp">Code postal</label>
+                <input id="cp" name="cp" type="text" inputmode="numeric" maxlength="5" pattern="[0-9]{1,5}" placeholder="Ex : 38000">
               </div>
 
               <div class="form-group">
@@ -441,17 +516,18 @@ textarea{
               </div>
 
               <div class="form-group">
-                <label for="adresse">Adresse</label>
-                <input id="adresse" name="adresse" type="text" placeholder="Ex : 12 rue des Alpes">
+                <label for="adresse1">Adresse 1</label>
+                <input id="adresse1" name="adresse1" type="text" placeholder="Ex : 12 rue des Alpes">
+              </div>
+
+              <div class="form-group">
+                <label for="adresse2">Adresse 2</label>
+                <input id="adresse2" name="adresse2" type="text" placeholder="Ex : Bâtiment B, étage 2">
               </div>
 
               <div class="form-group full">
-                <label for="activite">Activité</label>
-                <select id="activite" name="activite">
-                  <option value="Jardin">Jardin</option>
-                  <option value="Ménage">Ménage</option>
-                  <option value="Sport">Sport</option>
-                </select>
+                <label for="description">Description</label>
+                <textarea id="description" name="description" placeholder="Décrivez votre entreprise, vos prestations et votre zone d’intervention"></textarea>
               </div>
 
             </div>
@@ -472,7 +548,22 @@ textarea{
           <h3>Aperçu de votre annonce</h3>
 
           <div class="preview-block">
-            <strong>Nom</strong>
+            <strong>NOM de l’entreprise</strong>
+            <div id="previewEntreprise">-</div>
+          </div>
+
+          <div class="preview-block">
+            <strong>Activité de l’entreprise</strong>
+            <div id="previewActivite">-</div>
+          </div>
+
+          <div class="preview-block">
+            <strong>Liste des prestations</strong>
+            <div id="previewPrestations">-</div>
+          </div>
+
+          <div class="preview-block">
+            <strong>NOM</strong>
             <div id="previewNom">-</div>
           </div>
 
@@ -482,12 +573,7 @@ textarea{
           </div>
 
           <div class="preview-block">
-            <strong>Nom de l'entreprise</strong>
-            <div id="previewEntreprise">-</div>
-          </div>
-
-          <div class="preview-block">
-            <strong>Code Postal</strong>
+            <strong>Code postal</strong>
             <div id="previewCp">-</div>
           </div>
 
@@ -497,13 +583,18 @@ textarea{
           </div>
 
           <div class="preview-block">
-            <strong>Adresse</strong>
-            <div id="previewAdresse">-</div>
+            <strong>Adresse 1</strong>
+            <div id="previewAdresse1">-</div>
           </div>
 
           <div class="preview-block">
-            <strong>Activité</strong>
-            <div id="previewActivite">-</div>
+            <strong>Adresse 2</strong>
+            <div id="previewAdresse2">-</div>
+          </div>
+
+          <div class="preview-block">
+            <strong>Description</strong>
+            <div id="previewDescription">-</div>
           </div>
         </div>
 
@@ -530,6 +621,8 @@ textarea{
   const viewSavedAdBtn = document.getElementById("viewSavedAdBtn");
   const clearDraftBtn = document.getElementById("clearDraftBtn");
   const submitAdBtn = document.getElementById("submitAdBtn");
+  const addPrestationBtn = document.getElementById("addPrestationBtn");
+  const prestationsBody = document.getElementById("prestationsBody");
 
   const registerEmail = document.getElementById("registerEmail");
   const registerPassword = document.getElementById("registerPassword");
@@ -545,7 +638,9 @@ textarea{
     "activite",
     "cp",
     "ville",
-    "adresse"
+    "adresse1",
+    "adresse2",
+    "description"
   ];
 
   form.addEventListener("submit", (e) => e.preventDefault());
@@ -588,15 +683,93 @@ textarea{
     render();
   }
 
+  function normalizePrestations(prestations) {
+    if (Array.isArray(prestations)) {
+      return prestations
+        .map((item) => ({
+          prestation: String(item?.prestation || item?.prestations || item?.nom || "").trim(),
+          tarifHt: String(item?.tarifHt || item?.tarifHT || item?.tarif || "").trim()
+        }))
+        .filter((item) => item.prestation || item.tarifHt);
+    }
+
+    if (typeof prestations === "string") {
+      try {
+        return normalizePrestations(JSON.parse(prestations));
+      } catch {
+        return prestations.trim() ? [{ prestation: prestations.trim(), tarifHt: "" }] : [];
+      }
+    }
+
+    return [];
+  }
+
+  function createPrestationRow(prestation = "", tarifHt = "") {
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td><input class="prestation-name" type="text" placeholder="Ex : Nettoyage des vitres" value="${escapeHtml(prestation)}"></td>
+      <td><input class="prestation-price" type="text" inputmode="decimal" placeholder="Ex : 29" value="${escapeHtml(tarifHt)}"></td>
+      <td><button class="service-remove" type="button" aria-label="Supprimer cette prestation">Supprimer</button></td>
+    `;
+
+    row.querySelectorAll("input").forEach((input) => {
+      input.addEventListener("input", saveDraft);
+      input.addEventListener("change", saveDraft);
+    });
+
+    row.querySelector(".service-remove").addEventListener("click", () => {
+      if (prestationsBody.children.length === 1) {
+        row.querySelectorAll("input").forEach((input) => { input.value = ""; });
+      } else {
+        row.remove();
+      }
+      saveDraft();
+    });
+
+    prestationsBody.appendChild(row);
+  }
+
+  function escapeHtml(value) {
+    return String(value)
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
+  }
+
+  function getPrestationsData() {
+    return Array.from(prestationsBody.querySelectorAll("tr"))
+      .map((row) => ({
+        prestation: row.querySelector(".prestation-name")?.value.trim() || "",
+        tarifHt: row.querySelector(".prestation-price")?.value.trim() || ""
+      }))
+      .filter((item) => item.prestation || item.tarifHt);
+  }
+
+  function setPrestationsRows(prestations) {
+    prestationsBody.innerHTML = "";
+    const normalized = normalizePrestations(prestations);
+
+    if (normalized.length) {
+      normalized.forEach((item) => createPrestationRow(item.prestation, item.tarifHt));
+    } else {
+      createPrestationRow();
+    }
+  }
+
   function getDraftData() {
     return {
+      entreprise: document.getElementById("entreprise").value.trim(),
+      activite: document.getElementById("activite").value.trim(),
+      prestations: getPrestationsData(),
       nom: document.getElementById("nom").value.trim(),
       prenom: document.getElementById("prenom").value.trim(),
-      entreprise: document.getElementById("entreprise").value.trim(),
-      activite: document.getElementById("activite").value,
       cp: document.getElementById("cp").value.trim(),
       ville: document.getElementById("ville").value.trim(),
-      adresse: document.getElementById("adresse").value.trim()
+      adresse1: document.getElementById("adresse1").value.trim(),
+      adresse2: document.getElementById("adresse2").value.trim(),
+      description: document.getElementById("description").value.trim()
     };
   }
 
@@ -612,13 +785,16 @@ textarea{
     try {
       const draft = JSON.parse(raw);
 
+      document.getElementById("entreprise").value = draft.entreprise || "";
+      document.getElementById("activite").value = draft.activite || "";
+      setPrestationsRows(draft.prestations);
       document.getElementById("nom").value = draft.nom || "";
       document.getElementById("prenom").value = draft.prenom || "";
-      document.getElementById("entreprise").value = draft.entreprise || "";
-      document.getElementById("activite").value = draft.activite || "Jardin";
       document.getElementById("cp").value = draft.cp || "";
       document.getElementById("ville").value = draft.ville || "";
-      document.getElementById("adresse").value = draft.adresse || "";
+      document.getElementById("adresse1").value = draft.adresse1 || draft.adresse || "";
+      document.getElementById("adresse2").value = draft.adresse2 || "";
+      document.getElementById("description").value = draft.description || "";
 
       return true;
     } catch (error) {
@@ -637,12 +813,14 @@ textarea{
 
     try {
       const draft = JSON.parse(raw);
-      return Object.values(draft).some(value => String(value || "").trim() !== "");
+      return Object.values(draft).some(value => {
+        if (Array.isArray(value)) return value.some(item => Object.values(item || {}).some(itemValue => String(itemValue || "").trim() !== ""));
+        return String(value || "").trim() !== "";
+      });
     } catch {
       return false;
     }
   }
-
 
   function extractTokenFromPayload(payload) {
     if (!payload) return null;
@@ -726,13 +904,16 @@ textarea{
   }
 
   function validateAdData(adData) {
-    if (!adData.nom) return "Veuillez renseigner votre nom.";
+    if (!adData.entreprise) return "Veuillez renseigner le NOM de l’entreprise.";
+    if (!adData.activite) return "Veuillez renseigner l’activité de l’entreprise.";
+    if (!adData.prestations.length) return "Veuillez ajouter au moins une prestation.";
+    if (adData.prestations.some(item => !item.prestation || !item.tarifHt)) return "Chaque prestation doit contenir un libellé et un tarif/h HT.";
+    if (!adData.nom) return "Veuillez renseigner votre NOM.";
     if (!adData.prenom) return "Veuillez renseigner votre prénom.";
-    if (!adData.entreprise) return "Veuillez renseigner le nom de l'entreprise.";
-    if (!adData.activite) return "Veuillez sélectionner une activité.";
-    if (!/^[0-9]{5}$/.test(adData.cp)) return "Le code postal doit contenir 5 chiffres.";
+    if (!/^[0-9]{1,5}$/.test(adData.cp)) return "Le code postal doit être un nombre de 5 chiffres maximum.";
     if (!adData.ville) return "Veuillez renseigner votre ville.";
-    if (!adData.adresse) return "Veuillez renseigner votre adresse.";
+    if (!adData.adresse1) return "Veuillez renseigner l’adresse 1.";
+    if (!adData.description) return "Veuillez renseigner la description.";
     return null;
   }
 
@@ -792,24 +973,39 @@ textarea{
     }
   }
 
+  function renderPrestationsPreview(prestations) {
+    const target = document.getElementById("previewPrestations");
+    if (!prestations.length) {
+      target.textContent = "-";
+      return;
+    }
+
+    target.innerHTML = `
+      <table class="preview-services">
+        <thead>
+          <tr><th>Prestations</th><th>Tarif/h HT</th></tr>
+        </thead>
+        <tbody>
+          ${prestations.map((item) => `<tr><td>${escapeHtml(item.prestation)}</td><td>${escapeHtml(item.tarifHt)}</td></tr>`).join("")}
+        </tbody>
+      </table>
+    `;
+  }
+
   function buildPreview() {
     saveDraft();
 
-    const nom = document.getElementById("nom").value.trim() || "-";
-    const prenom = document.getElementById("prenom").value.trim() || "-";
-    const entreprise = document.getElementById("entreprise").value.trim() || "-";
-    const activite = document.getElementById("activite").value || "-";
-    const cp = document.getElementById("cp").value.trim() || "-";
-    const ville = document.getElementById("ville").value.trim() || "-";
-    const adresse = document.getElementById("adresse").value.trim() || "-";
-
-    document.getElementById("previewNom").textContent = nom;
-    document.getElementById("previewPrenom").textContent = prenom;
-    document.getElementById("previewEntreprise").textContent = entreprise;
-    document.getElementById("previewActivite").textContent = activite;
-    document.getElementById("previewCp").textContent = cp;
-    document.getElementById("previewVille").textContent = ville;
-    document.getElementById("previewAdresse").textContent = adresse;
+    const adData = getDraftData();
+    document.getElementById("previewEntreprise").textContent = adData.entreprise || "-";
+    document.getElementById("previewActivite").textContent = adData.activite || "-";
+    renderPrestationsPreview(adData.prestations);
+    document.getElementById("previewNom").textContent = adData.nom || "-";
+    document.getElementById("previewPrenom").textContent = adData.prenom || "-";
+    document.getElementById("previewCp").textContent = adData.cp || "-";
+    document.getElementById("previewVille").textContent = adData.ville || "-";
+    document.getElementById("previewAdresse1").textContent = adData.adresse1 || "-";
+    document.getElementById("previewAdresse2").textContent = adData.adresse2 || "-";
+    document.getElementById("previewDescription").textContent = adData.description || "-";
 
     previewBox.classList.add("show");
     showStatus("Brouillon sauvegardé. Voici un aperçu de votre annonce.", "info");
@@ -822,6 +1018,14 @@ textarea{
 
       field.addEventListener("input", saveDraft);
       field.addEventListener("change", saveDraft);
+    });
+  }
+
+  function bindPostalCodeFormatter() {
+    const cpField = document.getElementById("cp");
+    cpField.addEventListener("input", () => {
+      cpField.value = cpField.value.replace(/\D/g, "").slice(0, 5);
+      saveDraft();
     });
   }
 
@@ -841,25 +1045,31 @@ textarea{
     if (!rawAd || typeof rawAd !== "object") return null;
     return {
       _id: rawAd._id || rawAd.id || null,
+      entreprise: String(rawAd.entreprise || "").trim(),
+      activite: String(rawAd.activite || "").trim(),
+      prestations: normalizePrestations(rawAd.prestations || rawAd.prestation),
       nom: String(rawAd.nom || "").trim(),
       prenom: String(rawAd.prenom || "").trim(),
-      entreprise: String(rawAd.entreprise || "").trim(),
-      activite: String(rawAd.activite || "Jardin").trim(),
       cp: String(rawAd.cp || "").trim(),
       ville: String(rawAd.ville || "").trim(),
-      adresse: String(rawAd.adresse || "").trim()
+      adresse1: String(rawAd.adresse1 || rawAd.adresse || "").trim(),
+      adresse2: String(rawAd.adresse2 || "").trim(),
+      description: String(rawAd.description || "").trim()
     };
   }
 
   function fillAdForm(ad) {
     if (!ad) return;
+    document.getElementById("entreprise").value = ad.entreprise || "";
+    document.getElementById("activite").value = ad.activite || "";
+    setPrestationsRows(ad.prestations);
     document.getElementById("nom").value = ad.nom || "";
     document.getElementById("prenom").value = ad.prenom || "";
-    document.getElementById("entreprise").value = ad.entreprise || "";
-    document.getElementById("activite").value = ad.activite || "Jardin";
     document.getElementById("cp").value = ad.cp || "";
     document.getElementById("ville").value = ad.ville || "";
-    document.getElementById("adresse").value = ad.adresse || "";
+    document.getElementById("adresse1").value = ad.adresse1 || "";
+    document.getElementById("adresse2").value = ad.adresse2 || "";
+    document.getElementById("description").value = ad.description || "";
   }
 
   function setSubmitButtonLabel() {
@@ -891,6 +1101,10 @@ textarea{
   }
 
   registerBtn?.addEventListener("click", registerUser);
+  addPrestationBtn?.addEventListener("click", () => {
+    createPrestationRow();
+    saveDraft();
+  });
 
   backBtn?.addEventListener("click", () => {
     previewBox.classList.remove("show");
@@ -914,6 +1128,7 @@ textarea{
 
   clearDraftBtn?.addEventListener("click", () => {
     clearDraft();
+    setPrestationsRows([]);
     previewBox.classList.remove("show");
     showStatus("Le brouillon a été effacé.", "success");
   });
@@ -948,6 +1163,7 @@ textarea{
   const urlParams = new URLSearchParams(window.location.search);
   const fromDashboard = urlParams.get("fromDashboard") === "1";
   const shouldResume = urlParams.get("resume") === "1";
+  setPrestationsRows([]);
   const foundDraft = loadDraft();
 
   if (savedEmail) {
@@ -967,6 +1183,7 @@ textarea{
   }
 
   bindDraftAutosave();
+  bindPostalCodeFormatter();
   setSubmitButtonLabel();
   render();
 })();
