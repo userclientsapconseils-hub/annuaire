@@ -917,6 +917,20 @@ textarea{
     return null;
   }
 
+  function normalizeApiCandidates(payload) {
+    const parsed = parseApiData(payload);
+    return Array.isArray(parsed)
+      ? parsed
+      : (parsed && typeof parsed === "object" ? [parsed] : []);
+  }
+
+  async function findExistingAdForCurrentUser(token, userEmail) {
+    if (!token || !userEmail) return null;
+
+    const candidates = normalizeApiCandidates(await ApiClient.findOfferByMail(token, userEmail));
+    return candidates.find((candidate) => getApiRecordId(candidate)) || candidates[0] || null;
+  }
+
   async function submitAd() {
     hideStatus();
     previewBox.classList.remove("show");
@@ -928,6 +942,13 @@ textarea{
       return;
     }
 
+    const userEmail = localStorage.getItem("userEmail") || "";
+    if (!userEmail) {
+      showStatus("Adresse mail introuvable. Reconnectez-vous avant de publier une annonce.", "error");
+      go(1);
+      return;
+    }
+
     const adData = getDraftData();
     const validationError = validateAdData(adData);
     if (validationError) {
@@ -935,28 +956,39 @@ textarea{
       return;
     }
 
-    const existingAdId = getApiRecordId(existingAd);
-    const wasEditingSavedAd = Boolean(existingAdId);
-    const payload = existingAdId
-      ? { ...adData, id: existingAdId, mail: localStorage.getItem("userEmail") || "" }
-      : { ...adData, mail: localStorage.getItem("userEmail") || "" };
-
     try {
       submitAdBtn.disabled = true;
       submitAdBtn.textContent = "Enregistrement...";
-      showStatus("Enregistrement de votre annonce dans l'API...", "info");
+      showStatus("Vérification de votre annonce existante dans l'API...", "info");
 
-      const response = await ApiClient.saveOffer(token, payload, wasEditingSavedAd);
+      const savedAd = await findExistingAdForCurrentUser(token, userEmail);
+      const savedAdId = getApiRecordId(savedAd);
+      const existingAdId = getApiRecordId(existingAd);
+      const replacementId = savedAdId || existingAdId;
+      const shouldReplaceSavedAd = Boolean(savedAd || replacementId);
+      const payload = replacementId
+        ? { ...adData, id: replacementId, mail: userEmail }
+        : { ...adData, mail: userEmail };
+
+      showStatus(
+        shouldReplaceSavedAd
+          ? "Remplacement de votre annonce existante dans l'API..."
+          : "Enregistrement de votre annonce dans l'API...",
+        "info"
+      );
+
+      const response = await ApiClient.saveOffer(token, payload, shouldReplaceSavedAd);
 
       console.log("Réponse API annonce :", response);
       existingAd = {
-        id: existingAdId || getApiRecordId(response),
-        ...adData
+        id: replacementId || getApiRecordId(response),
+        ...adData,
+        mail: userEmail
       };
       setSubmitButtonLabel();
       clearDraft();
       showStatus(
-        wasEditingSavedAd ? "Annonce mise à jour avec succès." : "Annonce enregistrée avec succès dans l'API.",
+        shouldReplaceSavedAd ? "Annonce remplacée avec succès dans l'API." : "Annonce enregistrée avec succès dans l'API.",
         "success"
       );
     } catch (error) {
@@ -1088,13 +1120,10 @@ textarea{
     if (!token) return;
 
     try {
-      const payload = parseApiData(await ApiClient.findOfferByMail(token, localStorage.getItem("userEmail") || ""));
-      const candidates = Array.isArray(payload)
-        ? payload
-        : (payload && typeof payload === "object" ? [payload] : []);
+      const candidates = normalizeApiCandidates(await ApiClient.findOfferByMail(token, localStorage.getItem("userEmail") || ""));
       if (!candidates.length) return;
 
-      const saved = mapApiAd(candidates[0]);
+      const saved = mapApiAd(candidates.find((candidate) => getApiRecordId(candidate)) || candidates[0]);
       if (!saved) return;
 
       existingAd = saved;
