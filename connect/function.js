@@ -1,5 +1,5 @@
 const SESSION_KEY = "authSession";
-const SESSION_TTL_MS = 12 * 60 * 60 * 1000; // 12 heures
+const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 jours
 
 function userAlreadyConnected(token){
   //on parse le token
@@ -44,41 +44,6 @@ function persistSession(token, email) {
   localStorage.setItem("token", token);
   localStorage.setItem("userEmail", email);
 }
-
-function clearStoredSession() {
-  localStorage.removeItem(SESSION_KEY);
-  localStorage.removeItem("token");
-  localStorage.removeItem("userEmail");
-}
-
-function getActiveSession() {
-  const rawSession = localStorage.getItem(SESSION_KEY);
-  if (!rawSession) return null;
-
-  try {
-    const session = JSON.parse(rawSession);
-    if (!session?.token || !session?.email || !session?.expiresAt) return null;
-
-    if (Date.now() >= Number(session.expiresAt)) {
-      clearStoredSession();
-      return null;
-    }
-
-    return session;
-  } catch (error) {
-    console.error("Session invalide dans le stockage local :", error);
-    clearStoredSession();
-    return null;
-  }
-}
-
-function redirectIfRecentlyConnected() {
-  if (getActiveSession()) {
-    window.location.href = "../espacePersonnel/index.html";
-  }
-}
-
-redirectIfRecentlyConnected();
 
 async function checkGuest(guest){
   try{
