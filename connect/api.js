@@ -97,6 +97,21 @@
     });
   }
 
+  async function findOffers(data = {}, token = "") {
+    const body = {
+      request: "find",
+      collection: "publicOffer",
+      data
+    };
+
+    if (token) {
+      body.token = token;
+    }
+
+    return post(body);
+  }
+
+
   async function findOfferByMail(token, mail) {
     return post({
       request: "find",
@@ -111,6 +126,7 @@
     validateUserSession,
     registerUser,
     saveOffer,
+    findOffers,
     findOfferByMail
   };
 })(window);

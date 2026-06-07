@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Liste des annonces</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <section class="hero">
+    <header class="nav">
+      <div class="nav-left">
+        <div class="brand">
+          <svg class="pin" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 2c-3.86 0-7 3.14-7 7 0 5.25 7 13 7 13s7-7.75 7-13c0-3.86-3.14-7-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/>
+          </svg>
+          <a href="../index.html">Accueil</a>
+        </div>
+        <nav class="menu" id="mainMenu" aria-label="Menu principal">
+          <a href="../index.html#">Les Prestations</a>
+          <a href="index.html">Annonces</a>
+          <a href="../annonce/annonceindex.html">Annonce exemple</a>
+        </nav>
+      </div>
+
+      <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="mainMenu">
+        <span class="sr-only">Ouvrir le menu</span>
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M3 6h18v2H3V6zm0 5h18v2H3v-2zm0 5h18v2H3v-2z"/>
+        </svg>
+      </button>
+
+      <div class="nav-right">
+        <a href="../connect/index.html">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" style="fill:rgba(255,255,255,.85)">
+            <path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4zm0 2c-4.42 0-8 2-8 4.5V21h16v-2.5C20 16 16.42 14 12 14z"/>
+          </svg>
+          <span>Connexion</span>
+        </a>
+        <a class="btn btn-primary" href="../submit/submitindex.html">
+          <span aria-hidden="true">+</span>
+          <span>Annonce</span>
+        </a>
+      </div>
+    </header>
+
+    <main class="container">
+      <section class="panel intro">
+        <p class="eyebrow">Annuaire</p>
+        <h1>Les annonces des professionnels</h1>
+        <p>Retrouvez les annonces publiées par les différents utilisateurs du site.</p>
+
+        <form class="filters" id="annoncesSearchForm" autocomplete="off">
+          <label>
+            <span>Code postal</span>
+            <input id="cpFilter" name="cp" type="text" inputmode="numeric" maxlength="5" pattern="\d{5}" placeholder="Ex : 38500" />
+          </label>
+          <label>
+            <span>Activité</span>
+            <select id="activityFilter" name="activite">
+              <option value="">Toutes les activités</option>
+              <option value="Jardiniers/Paysagistes">Jardiniers/Paysagistes</option>
+              <option value="Ménage">Ménage</option>
+              <option value="Cours à domicile">Cours à domicile</option>
+            </select>
+          </label>
+          <button type="submit">Rechercher</button>
+        </form>
+      </section>
+
+      <p class="status" id="annoncesStatus">Chargement des annonces...</p>
+      <section class="annonces-grid" id="annoncesList" aria-live="polite"></section>
+    </main>
+  </section>
+
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script src="../connect/api.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
