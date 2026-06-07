@@ -34,17 +34,6 @@ function normalizeText(value) {
     .trim();
 }
 
-function getActivitySearchTerms(activity) {
-  const normalized = normalizeText(activity);
-  const aliases = {
-    "jardiniers paysagistes": ["jardinier", "jardiniers", "paysagiste", "paysagistes"],
-    "menage": ["menage", "nettoyage"],
-    "cours a domicile": ["cours a domicile", "cours"]
-  };
-
-  return [normalized, ...(aliases[normalized] || [])].filter(Boolean);
-}
-
 function normalizePrestations(prestations) {
   if (Array.isArray(prestations)) {
     return prestations
@@ -119,12 +108,12 @@ async function fetchOffers(cp = "", activite = "") {
 }
 
 function matchesSearch(offer, cp, activite) {
-  const searchedActivities = getActivitySearchTerms(activite);
+  const searchedActivity = normalizeText(activite);
   const activityHaystack = normalizeText([
     offer.activite,
     ...offer.prestations.map((item) => item.prestation)
   ].join(" "));
-  const activityMatches = Boolean(activityHaystack) && searchedActivities.some((term) => activityHaystack.includes(term) || term.includes(activityHaystack));
+  const activityMatches = Boolean(activityHaystack) && (activityHaystack.includes(searchedActivity) || searchedActivity.includes(activityHaystack));
 
   const searchedDepartment = cp.slice(0, 2);
   const offerDepartment = offer.cp.slice(0, 2);

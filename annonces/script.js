@@ -22,17 +22,6 @@ function normalizeText(value) {
   return String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
 }
 
-function getActivitySearchTerms(activity) {
-  const normalized = normalizeText(activity);
-  const aliases = {
-    "jardiniers paysagistes": ["jardinier", "jardiniers", "paysagiste", "paysagistes"],
-    "menage": ["menage", "nettoyage"],
-    "cours a domicile": ["cours a domicile", "cours"]
-  };
-
-  return [normalized, ...(aliases[normalized] || [])].filter(Boolean);
-}
-
 function normalizePrestations(prestations) {
   if (Array.isArray(prestations)) {
     return prestations.map((item) => ({
@@ -90,7 +79,7 @@ function matchesFilters(offer) {
   const offerDepartment = offer.cp.slice(0, 2);
   const postalMatch = !cp || offer.cp === cp || (!!department && offerDepartment === department);
   const activityHaystack = normalizeText([offer.activite, ...offer.prestations.map((item) => item.prestation)].join(" "));
-  const activityMatch = !activite || getActivitySearchTerms(activite).some((term) => activityHaystack.includes(term));
+  const activityMatch = !activite || activityHaystack.includes(normalizeText(activite));
   return postalMatch && activityMatch;
 }
 
