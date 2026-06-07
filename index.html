@@ -20,7 +20,7 @@
         
         <nav class="menu" id="mainMenu" aria-label="Menu principal">
           <a href="inscriptiontest.html">Les Prestations</a>
-          <a href="annonce/annonceindex.html">Annonce</a>
+          <a href="annonces/index.html">Annonces</a>
           <a href="labo/memo.html">Lab</a>
         </nav>
       </div>
@@ -105,10 +105,14 @@
         </form>
 
         <div class="hint" id="hint"></div>
+
+        <section class="search-results" id="searchResults" aria-live="polite" aria-label="Résultats de recherche"></section>
       </div>
     </div>
   </section>
 
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script src="connect/api.js"></script>
   <script src="home/script.js"></script>
 </body>
 </html>
