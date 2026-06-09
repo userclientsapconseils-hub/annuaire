@@ -169,6 +169,10 @@ h1{margin:0;font-size:26px}
   background:#eee;
   cursor:pointer;
   font-weight:600;
+  display:block;
+  color:#111;
+  text-align:center;
+  text-decoration:none;
 }
 .btn-wide.primary{
   background:var(--red);

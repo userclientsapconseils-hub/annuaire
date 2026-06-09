@@ -55,9 +55,18 @@ function normalizePrestations(prestations) {
   return [];
 }
 
-function mapOffer(rawOffer) {
+function getApiRecordId(record) {
+  if (!record || typeof record !== "object") return "";
+  return String(record.id || record._id || "").trim();
+}
+
+function mapOffer(rawOffer, index = 0) {
   const prestations = normalizePrestations(rawOffer?.prestations || rawOffer?.prestation);
+  const mail = String(rawOffer?.mail || "").trim();
+  const fallbackKey = [mail, rawOffer?.entreprise, rawOffer?.cp, rawOffer?.ville, index].filter(Boolean).join("-");
   return {
+    id: getApiRecordId(rawOffer),
+    key: String(rawOffer?.key || getApiRecordId(rawOffer) || normalizeText(fallbackKey) || `annonce-${index}`).trim(),
     entreprise: String(rawOffer?.entreprise || "").trim(),
     activite: String(rawOffer?.activite || "").trim(),
     prestations,
@@ -67,6 +76,7 @@ function mapOffer(rawOffer) {
     ville: String(rawOffer?.ville || "").trim(),
     adresse1: String(rawOffer?.adresse1 || rawOffer?.adresse || "").trim(),
     adresse2: String(rawOffer?.adresse2 || "").trim(),
+    mail,
     description: String(rawOffer?.description || "").trim()
   };
 }
@@ -147,6 +157,21 @@ function buildMoreResultsUrl() {
   return `annonces/index.html${params.toString() ? `?${params.toString()}` : ""}`;
 }
 
+function buildOfferUrl(offer) {
+  const params = new URLSearchParams();
+  if (offer.id) params.set("id", offer.id);
+  params.set("offer", offer.key);
+  return `annonce/annonceindex.html?${params.toString()}`;
+}
+
+function rememberOffer(offer) {
+  try {
+    sessionStorage.setItem("selectedOffer", JSON.stringify(offer));
+  } catch (error) {
+    console.warn("Impossible de mémoriser l'annonce sélectionnée :", error);
+  }
+}
+
 function renderResults() {
   if (!resultsContainer) return;
 
@@ -165,7 +190,7 @@ function renderResults() {
     const price = offer.prestations.find((item) => item.tarifHt)?.tarifHt;
 
     return `
-      <article class="result-card">
+      <a class="result-card" href="${escapeHtml(buildOfferUrl(offer))}" data-offer-key="${escapeHtml(offer.key)}" aria-label="Voir l'annonce complète : ${escapeHtml(title)}">
         <h2>${escapeHtml(title)}</h2>
         <div class="result-meta">
           ${offer.activite ? `<span class="result-pill">${escapeHtml(offer.activite)}</span>` : ""}
@@ -173,7 +198,8 @@ function renderResults() {
           ${price ? `<span class="result-pill">Dès ${escapeHtml(price)}€ HT/h</span>` : ""}
         </div>
         <p class="result-desc">${escapeHtml(description).slice(0, 180)}${description.length > 180 ? "…" : ""}</p>
-      </article>
+        <span class="result-link">Voir l’annonce complète</span>
+      </a>
     `;
   }).join("");
 
@@ -182,6 +208,12 @@ function renderResults() {
     : "";
 
   resultsContainer.innerHTML = `<div class="results-grid">${cards}</div>${loadMoreButton}`;
+  resultsContainer.querySelectorAll("[data-offer-key]").forEach((card) => {
+    card.addEventListener("click", () => {
+      const offer = visibleOffers.find((item) => item.key === card.dataset.offerKey);
+      if (offer) rememberOffer(offer);
+    });
+  });
 }
 
 form.addEventListener("submit", async (e) => {

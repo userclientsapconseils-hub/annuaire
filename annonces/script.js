@@ -16,7 +16,7 @@ function parseApiData(payload) {
 }
 
 const API_COLLECTION_KEYS = ["data", "body", "items", "Items", "records", "results", "offers", "annonces"];
-const OFFER_FIELD_KEYS = ["entreprise", "activite", "prestation", "prestations", "description", "cp", "ville", "nom", "prenom", "mail"];
+const OFFER_FIELD_KEYS = ["id", "_id", "entreprise", "activite", "prestation", "prestations", "description", "cp", "ville", "nom", "prenom", "mail"];
 
 function hasOfferShape(value) {
   return value
@@ -76,9 +76,18 @@ function normalizePrestations(prestations) {
   return [];
 }
 
-function mapOffer(rawOffer) {
+function getApiRecordId(record) {
+  if (!record || typeof record !== "object") return "";
+  return String(record.id || record._id || "").trim();
+}
+
+function mapOffer(rawOffer, index = 0) {
   const prestations = normalizePrestations(rawOffer?.prestations || rawOffer?.prestation);
+  const mail = String(rawOffer?.mail || "").trim();
+  const fallbackKey = [mail, rawOffer?.entreprise, rawOffer?.cp, rawOffer?.ville, index].filter(Boolean).join("-");
   return {
+    id: getApiRecordId(rawOffer),
+    key: String(rawOffer?.key || getApiRecordId(rawOffer) || normalizeText(fallbackKey) || `annonce-${index}`).trim(),
     entreprise: String(rawOffer?.entreprise || "").trim(),
     activite: String(rawOffer?.activite || "").trim(),
     prestations,
@@ -86,6 +95,9 @@ function mapOffer(rawOffer) {
     prenom: String(rawOffer?.prenom || "").trim(),
     cp: String(rawOffer?.cp || "").trim(),
     ville: String(rawOffer?.ville || "").trim(),
+    adresse1: String(rawOffer?.adresse1 || rawOffer?.adresse || "").trim(),
+    adresse2: String(rawOffer?.adresse2 || "").trim(),
+    mail,
     description: String(rawOffer?.description || "").trim()
   };
 }
@@ -116,6 +128,21 @@ function matchesFilters(offer) {
 
 function escapeHtml(value) {
   return String(value).replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#039;");
+}
+
+function buildOfferUrl(offer) {
+  const params = new URLSearchParams();
+  if (offer.id) params.set("id", offer.id);
+  params.set("offer", offer.key);
+  return `../annonce/annonceindex.html?${params.toString()}`;
+}
+
+function rememberOffer(offer) {
+  try {
+    sessionStorage.setItem("selectedOffer", JSON.stringify(offer));
+  } catch (error) {
+    console.warn("Impossible de mémoriser l'annonce sélectionnée :", error);
+  }
 }
 
 function getTotalPages(offersCount) {
@@ -170,7 +197,7 @@ function renderOffers(offers) {
     const services = offer.prestations.slice(0, 3).map((item) => `<li>${escapeHtml(item.prestation || "Prestation")} ${item.tarifHt ? `— ${escapeHtml(item.tarifHt)}€ HT/h` : ""}</li>`).join("");
 
     return `
-      <article class="ad-card">
+      <a class="ad-card" href="${escapeHtml(buildOfferUrl(offer))}" data-offer-key="${escapeHtml(offer.key)}" aria-label="Voir l'annonce complète : ${escapeHtml(title)}">
         <h2>${escapeHtml(title)}</h2>
         <div class="ad-meta">
           ${offer.activite ? `<span class="pill">${escapeHtml(offer.activite)}</span>` : ""}
@@ -178,11 +205,18 @@ function renderOffers(offers) {
         </div>
         <p>${escapeHtml(description).slice(0, 240)}${description.length > 240 ? "…" : ""}</p>
         ${services ? `<ul class="services">${services}</ul>` : ""}
-      </article>
+        <span class="card-link">Voir l’annonce complète</span>
+      </a>
     `;
   }).join("");
 
   listEl.innerHTML = `${cards}${buildPagination(totalPages)}`;
+  listEl.querySelectorAll("[data-offer-key]").forEach((card) => {
+    card.addEventListener("click", () => {
+      const offer = visibleOffers.find((item) => item.key === card.dataset.offerKey);
+      if (offer) rememberOffer(offer);
+    });
+  });
   bindPaginationButtons(totalPages);
 }
 
