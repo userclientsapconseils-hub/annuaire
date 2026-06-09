@@ -1,14 +1,62 @@
 const SESSION_KEY = "authSession";
 const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 jours
 
-function userAlreadyConnected(token){
-  //on parse le token
-  if (!token) {return false}
-  else{token = JSON.parse(token)}
-  return true
-  //a finaliser
+function getStoredSession() {
+  const rawSession = localStorage.getItem(SESSION_KEY);
+  const legacyToken = localStorage.getItem("token");
+  const legacyEmail = localStorage.getItem("userEmail");
+
+  if (!rawSession) {
+    if (legacyToken && legacyEmail) {
+      return { token: legacyToken, email: legacyEmail, expiresAt: null };
+    }
+    return null;
+  }
+
+  try {
+    const session = JSON.parse(rawSession);
+    if (!session?.token || !session?.email) return null;
+    return session;
+  } catch (error) {
+    console.error("Session invalide dans le stockage local :", error);
+    return null;
+  }
 }
 
+function clearSession() {
+  localStorage.removeItem(SESSION_KEY);
+  localStorage.removeItem("token");
+  localStorage.removeItem("userEmail");
+}
+
+function getActiveSession() {
+  const session = getStoredSession();
+
+  if (!session?.token || !session?.email) return null;
+
+  if (session.expiresAt && Date.now() >= Number(session.expiresAt)) {
+    clearSession();
+    return null;
+  }
+
+  return session;
+}
+
+function redirectToPersonalSpace() {
+  window.location.href = "../espacePersonnel/index.html";
+}
+
+function userAlreadyConnected() {
+  const session = getActiveSession();
+
+  if (!session) return false;
+
+  // On prolonge la session valide pour éviter de redemander les identifiants
+  // lorsque l'utilisateur revient sur la page de connexion.
+  persistSession(session.token, session.email);
+  redirectToPersonalSpace();
+  return true;
+}
 
 function extractToken(payload){
   if (!payload) return "";
@@ -75,7 +123,7 @@ async function checkGuest(guest){
 }
 
 function cookieWrite(token){
-  document.cookie = "token="+encodeURIComponent(token)+"; path=/annuaire; SameSite=Lax; Secure"
+  document.cookie = "token="+encodeURIComponent(token)+"; path=/annuaire; max-age="+(SESSION_TTL_MS / 1000)+"; SameSite=Lax; Secure"
   console.log(decodeURIComponent(document.cookie))
 }
 
@@ -106,8 +154,8 @@ async function main(){
   //console.log(guest)
   try{
     changementStyleBoutton(guest, true)
-    //on regarde dans les cookies si un token existe déjà, si c'est le cas on connecte la personne
-    await userAlreadyConnected(guest.token)
+    // Si une session locale valide existe déjà, on ouvre directement l'espace personnel.
+    if(userAlreadyConnected()){return guest.token}
     //sinon check des champs
     if(!guest.mail){throw "mail"}
     if(!guest.password){throw "password"}
@@ -115,7 +163,7 @@ async function main(){
     await checkGuest(guest)
     changementStyleBoutton(guest, false)
     if (guest.token) {
-      window.location.href = "../espacePersonnel/index.html"
+      redirectToPersonalSpace()
     }
     return guest.token
   }catch(e){
@@ -130,6 +178,11 @@ async function main(){
     changementStyleBoutton(guest, false)
   }    
 }
+
+
+document.addEventListener("DOMContentLoaded", function() {
+  userAlreadyConnected();
+});
 
   
 /*const SESSION_KEY = "authSession";
