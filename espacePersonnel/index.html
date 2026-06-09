@@ -105,6 +105,60 @@
       font-size:12px;
       font-weight:700;
     }
+
+    .api-offer{
+      margin-top:24px;
+      padding:20px;
+      border:1px solid #e5e7eb;
+      border-radius:14px;
+      background:#f9fafb;
+    }
+    .api-offer h2{
+      margin:0 0 10px;
+      font-size:20px;
+    }
+    .api-offer-card{
+      display:none;
+      margin-top:14px;
+      padding:18px;
+      border:1px solid #e5e7eb;
+      border-radius:12px;
+      background:#fff;
+    }
+    .api-offer-card.show{
+      display:block;
+    }
+    .api-offer-card h3{
+      margin:0 0 10px;
+      font-size:22px;
+    }
+    .offer-meta{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin-bottom:14px;
+    }
+    .offer-pill{
+      display:inline-flex;
+      align-items:center;
+      padding:6px 10px;
+      border-radius:999px;
+      background:#eef2ff;
+      color:#3730a3;
+      font-size:12px;
+      font-weight:700;
+    }
+    .offer-description{
+      margin:0 0 14px;
+      color:#374151;
+    }
+    .offer-services{
+      margin:0;
+      padding-left:20px;
+    }
+    .offer-services li{
+      margin-bottom:6px;
+    }
     @media (max-width:700px){
       .container{
         margin:30px auto;
@@ -146,6 +200,12 @@
         <a id="adActionBtn" class="btn-link" href="../submit/submitindex.html">Créer mon annonce</a>
         <button id="deleteDraftBtn" class="btn-light" type="button">Effacer le brouillon</button>
       </div>
+
+      <section class="api-offer" aria-labelledby="apiOfferTitle">
+        <h2 id="apiOfferTitle">Mon annonce enregistrée</h2>
+        <p id="apiOfferStatus" class="status show info">Chargement de votre annonce liée à votre adresse mail...</p>
+        <article id="apiOfferCard" class="api-offer-card" aria-live="polite"></article>
+      </section>
     </div>
   </div>
 
@@ -160,6 +220,8 @@
     const adActionBtn = document.getElementById("adActionBtn");
     const deleteDraftBtn = document.getElementById("deleteDraftBtn");
     const draftStatus = document.getElementById("draftStatus");
+    const apiOfferStatus = document.getElementById("apiOfferStatus");
+    const apiOfferCard = document.getElementById("apiOfferCard");
 
     function getStoredSession() {
       const legacyToken = localStorage.getItem("token");
@@ -211,6 +273,158 @@
       localStorage.removeItem("token");
       localStorage.removeItem("userEmail");
       window.location.href = "../connect/index.html";
+    }
+
+
+    function parseApiData(payload) {
+      if (payload === null || payload === undefined) return null;
+      if (typeof payload === "string") {
+        try {
+          return JSON.parse(payload);
+        } catch {
+          return payload;
+        }
+      }
+      return payload;
+    }
+
+    const API_COLLECTION_KEYS = ["data", "body", "items", "Items", "records", "results", "offers", "annonces"];
+    const OFFER_FIELD_KEYS = ["entreprise", "activite", "prestation", "prestations", "description", "cp", "ville", "nom", "prenom", "mail"];
+
+    function hasOfferShape(value) {
+      return value
+        && typeof value === "object"
+        && !Array.isArray(value)
+        && OFFER_FIELD_KEYS.some((key) => Object.prototype.hasOwnProperty.call(value, key));
+    }
+
+    function collectApiCandidates(value, candidates, seen) {
+      const parsed = parseApiData(value);
+      if (parsed === null || parsed === undefined) return;
+
+      if (Array.isArray(parsed)) {
+        parsed.forEach((item) => collectApiCandidates(item, candidates, seen));
+        return;
+      }
+
+      if (typeof parsed !== "object") return;
+      if (seen.has(parsed)) return;
+      seen.add(parsed);
+
+      if (hasOfferShape(parsed)) {
+        candidates.push(parsed);
+      }
+
+      API_COLLECTION_KEYS.forEach((key) => {
+        if (Object.prototype.hasOwnProperty.call(parsed, key)) {
+          collectApiCandidates(parsed[key], candidates, seen);
+        }
+      });
+    }
+
+    function normalizeApiCandidates(payload) {
+      const candidates = [];
+      collectApiCandidates(payload, candidates, new Set());
+      return candidates;
+    }
+
+    function normalizePrestations(prestations) {
+      if (Array.isArray(prestations)) {
+        return prestations.map((item) => ({
+          prestation: String(item?.prestation || item?.prestations || item?.nom || "").trim(),
+          tarifHt: String(item?.tarifHt || item?.tarifHT || item?.tarif || "").trim()
+        })).filter((item) => item.prestation || item.tarifHt);
+      }
+
+      if (typeof prestations === "string") {
+        try {
+          return normalizePrestations(JSON.parse(prestations));
+        } catch {
+          return prestations.trim() ? [{ prestation: prestations.trim(), tarifHt: "" }] : [];
+        }
+      }
+
+      return [];
+    }
+
+    function mapOffer(rawOffer) {
+      if (!rawOffer || typeof rawOffer !== "object") return null;
+
+      return {
+        entreprise: String(rawOffer.entreprise || "").trim(),
+        activite: String(rawOffer.activite || "").trim(),
+        prestations: normalizePrestations(rawOffer.prestations || rawOffer.prestation),
+        nom: String(rawOffer.nom || "").trim(),
+        prenom: String(rawOffer.prenom || "").trim(),
+        cp: String(rawOffer.cp || "").trim(),
+        ville: String(rawOffer.ville || "").trim(),
+        adresse1: String(rawOffer.adresse1 || rawOffer.adresse || "").trim(),
+        adresse2: String(rawOffer.adresse2 || "").trim(),
+        description: String(rawOffer.description || "").trim(),
+        mail: String(rawOffer.mail || "").trim()
+      };
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function showApiOfferStatus(message, type = "info") {
+      apiOfferStatus.className = "status show " + type;
+      apiOfferStatus.textContent = message;
+    }
+
+    function renderApiOffer(offer) {
+      const title = offer.entreprise || `${offer.prenom} ${offer.nom}`.trim() || "Votre annonce";
+      const location = [offer.cp, offer.ville].filter(Boolean).join(" ");
+      const address = [offer.adresse1, offer.adresse2].filter(Boolean).join(" — ");
+      const services = offer.prestations.map((item) => {
+        const price = item.tarifHt ? ` — ${escapeHtml(item.tarifHt)}€ HT/h` : "";
+        return `<li>${escapeHtml(item.prestation || "Prestation")}${price}</li>`;
+      }).join("");
+
+      apiOfferCard.innerHTML = `
+        <h3>${escapeHtml(title)}</h3>
+        <div class="offer-meta">
+          ${offer.activite ? `<span class="offer-pill">${escapeHtml(offer.activite)}</span>` : ""}
+          ${location ? `<span class="offer-pill">${escapeHtml(location)}</span>` : ""}
+          ${address ? `<span class="offer-pill">${escapeHtml(address)}</span>` : ""}
+        </div>
+        <p class="offer-description">${escapeHtml(offer.description || "Aucune description renseignée.")}</p>
+        ${services ? `<strong>Prestations</strong><ul class="offer-services">${services}</ul>` : ""}
+        <div class="actions">
+          <a class="btn-link btn-secondary" href="../submit/submitindex.html?fromDashboard=1">Modifier mon annonce</a>
+        </div>
+      `;
+      apiOfferCard.classList.add("show");
+    }
+
+    async function loadApiOffer(token, userEmail) {
+      apiOfferCard.classList.remove("show");
+      apiOfferCard.innerHTML = "";
+      showApiOfferStatus("Chargement de votre annonce liée à votre adresse mail...", "info");
+
+      try {
+        const payload = await ApiClient.findOfferByMail(token, userEmail);
+        const offers = normalizeApiCandidates(payload).map(mapOffer).filter(Boolean);
+        const offer = offers.find((candidate) => candidate.mail === userEmail) || offers[0];
+
+        if (!offer) {
+          showApiOfferStatus("Aucune annonce enregistrée n'est liée à votre adresse mail pour le moment.", "info");
+          return;
+        }
+
+        renderApiOffer(offer);
+        showApiOfferStatus("Annonce enregistrée trouvée dans l'API pour votre adresse mail.", "success");
+      } catch (error) {
+        console.error("Impossible de charger l'annonce liée à l'adresse mail :", error);
+        showApiOfferStatus("Impossible de charger votre annonce enregistrée pour le moment.", "warning");
+      }
     }
 
     function hasMeaningfulDraft() {
@@ -296,6 +510,7 @@
       adActionBtn.style.opacity = "";
       deleteDraftBtn.disabled = false;
       refreshDraftUI();
+      loadApiOffer(token, userEmail);
 
       if (sessionState === "unknown") {
         showDraftStatus("Connexion conservée. Vérification distante indisponible pour le moment.", "warning");
