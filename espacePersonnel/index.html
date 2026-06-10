@@ -66,10 +66,6 @@
     .btn-secondary{
       background:#111827;
     }
-    .btn-light{
-      background:#e5e7eb;
-      color:#111;
-    }
     .status{
       margin-top:20px;
       padding:14px 16px;
@@ -95,17 +91,6 @@
       color:#9a3412;
       border:1px solid #fed7aa;
     }
-    .label{
-      display:inline-block;
-      margin-top:18px;
-      padding:6px 10px;
-      border-radius:999px;
-      background:#fee2e2;
-      color:#991b1b;
-      font-size:12px;
-      font-weight:700;
-    }
-
     .api-offer{
       margin-top:24px;
       padding:20px;
@@ -189,16 +174,13 @@
 
       <div class="info">
         <p><strong>Email :</strong> <span id="userEmail"></span></p>
-        <p><strong>Token :</strong> <span id="userToken"></span></p>
       </div>
 
-      <span class="label">Annonce professionnelle</span>
 
       <div id="draftStatus" class="status"></div>
 
       <div class="actions">
         <a id="adActionBtn" class="btn-link" href="../submit/submitindex.html">Créer mon annonce</a>
-        <button id="deleteDraftBtn" class="btn-light" type="button">Effacer le brouillon</button>
       </div>
 
       <section class="api-offer" aria-labelledby="apiOfferTitle">
@@ -215,10 +197,8 @@
     const SESSION_KEY = "authSession";
     const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 jours
     const userEmailEl = document.getElementById("userEmail");
-    const userTokenEl = document.getElementById("userToken");
     const logoutBtn = document.getElementById("logoutBtn");
     const adActionBtn = document.getElementById("adActionBtn");
-    const deleteDraftBtn = document.getElementById("deleteDraftBtn");
     const draftStatus = document.getElementById("draftStatus");
     const apiOfferStatus = document.getElementById("apiOfferStatus");
     const apiOfferCard = document.getElementById("apiOfferCard");
@@ -379,6 +359,11 @@
       apiOfferStatus.textContent = message;
     }
 
+    function hideApiOfferStatus() {
+      apiOfferStatus.className = "status";
+      apiOfferStatus.textContent = "";
+    }
+
     function renderApiOffer(offer) {
       const title = offer.entreprise || `${offer.prenom} ${offer.nom}`.trim() || "Votre annonce";
       const location = [offer.cp, offer.ville].filter(Boolean).join(" ");
@@ -420,29 +405,10 @@
         }
 
         renderApiOffer(offer);
-        showApiOfferStatus("Annonce enregistrée trouvée dans l'API pour votre adresse mail.", "success");
+        hideApiOfferStatus();
       } catch (error) {
         console.error("Impossible de charger l'annonce liée à l'adresse mail :", error);
         showApiOfferStatus("Impossible de charger votre annonce enregistrée pour le moment.", "warning");
-      }
-    }
-
-    function hasMeaningfulDraft() {
-      const rawDraft = localStorage.getItem("adDraft");
-      if (!rawDraft) return false;
-
-      try {
-        const draft = JSON.parse(rawDraft);
-        return Object.values(draft).some(value => {
-          if (Array.isArray(value)) {
-            return value.some(item => Object.values(item || {}).some(itemValue => String(itemValue || "").trim() !== ""));
-          }
-
-          return String(value || "").trim() !== "";
-        });
-      } catch (error) {
-        console.error("Erreur lecture brouillon :", error);
-        return false;
       }
     }
 
@@ -457,26 +423,10 @@
     }
 
     function refreshDraftUI() {
-      const draftExists = hasMeaningfulDraft();
-
-      if (draftExists) {
-        adActionBtn.textContent = "Reprendre mon annonce";
-        adActionBtn.href = "../submit/submitindex.html?resume=1&fromDashboard=1";
-        deleteDraftBtn.style.display = "inline-flex";
-        showDraftStatus("Un brouillon d’annonce a été trouvé. Vous pouvez reprendre là où vous vous êtes arrêté.", "warning");
-      } else {
-        adActionBtn.textContent = "Créer mon annonce";
-        adActionBtn.href = "../submit/submitindex.html?fromDashboard=1";
-        deleteDraftBtn.style.display = "none";
-        showDraftStatus("Aucun brouillon trouvé. Vous pouvez créer une nouvelle annonce.", "info");
-      }
+      adActionBtn.textContent = "Créer mon annonce";
+      adActionBtn.href = "../submit/submitindex.html?fromDashboard=1";
+      hideDraftStatus();
     }
-
-    deleteDraftBtn.addEventListener("click", function() {
-      localStorage.removeItem("adDraft");
-      refreshDraftUI();
-      showDraftStatus("Le brouillon a été supprimé.", "success");
-    });
 
     logoutBtn.addEventListener("click", function() {
       forceLogout();
@@ -494,11 +444,9 @@
 
       persistSession(token, userEmail);
       userEmailEl.innerText = userEmail || "Non renseigné";
-      userTokenEl.innerText = token ? token.slice(0, 8) + "..." : "-";
       showDraftStatus("Vérification de votre session...", "info");
       adActionBtn.style.pointerEvents = "none";
       adActionBtn.style.opacity = "0.6";
-      deleteDraftBtn.disabled = true;
 
       const sessionState = await ApiClient.validateUserSession(token, userEmail);
       if (sessionState === "invalid") {
@@ -508,7 +456,6 @@
 
       adActionBtn.style.pointerEvents = "";
       adActionBtn.style.opacity = "";
-      deleteDraftBtn.disabled = false;
       refreshDraftUI();
       loadApiOffer(token, userEmail);
 
