@@ -540,9 +540,7 @@ textarea{
 
             <div class="actions">
               <button class="btn btn-form btn-secondary" type="button" id="backBtn">Retour</button>
-              <button class="btn btn-form btn-secondary" type="button" id="clearDraftBtn">Effacer le brouillon</button>
               <button class="btn btn-form" type="button" id="previewBtn">Voir mon annonce</button>
-              <button class="btn btn-form btn-secondary" type="button" id="viewSavedAdBtn">Consulter l'annonce enregistrée</button>
               <button class="btn btn-form" type="button" id="submitAdBtn">Enregistrer dans l'API</button>
             </div>
           </section>
@@ -624,8 +622,6 @@ textarea{
   const registerBtn = document.getElementById("registerBtn");
   const backBtn = document.getElementById("backBtn");
   const previewBtn = document.getElementById("previewBtn");
-  const viewSavedAdBtn = document.getElementById("viewSavedAdBtn");
-  const clearDraftBtn = document.getElementById("clearDraftBtn");
   const submitAdBtn = document.getElementById("submitAdBtn");
   const addPrestationBtn = document.getElementById("addPrestationBtn");
   const prestationsBody = document.getElementById("prestationsBody");
@@ -1087,10 +1083,25 @@ textarea{
     return record.id || record._id || null;
   }
 
-  function mapApiAd(rawAd) {
+  function normalizeText(value) {
+    return String(value || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, " ")
+      .trim();
+  }
+
+  function mapApiAd(rawAd, index = 0) {
     if (!rawAd || typeof rawAd !== "object") return null;
+
+    const id = getApiRecordId(rawAd);
+    const mail = String(rawAd.mail || "").trim();
+    const fallbackKey = [mail, rawAd.entreprise, rawAd.cp, rawAd.ville, index].filter(Boolean).join("-");
+
     return {
-      id: getApiRecordId(rawAd),
+      id,
+      key: String(rawAd.key || id || normalizeText(fallbackKey) || `annonce-${index}`).trim(),
       entreprise: String(rawAd.entreprise || "").trim(),
       activite: String(rawAd.activite || "").trim(),
       prestations: normalizePrestations(rawAd.prestations || rawAd.prestation),
@@ -1100,6 +1111,7 @@ textarea{
       ville: String(rawAd.ville || "").trim(),
       adresse1: String(rawAd.adresse1 || rawAd.adresse || "").trim(),
       adresse2: String(rawAd.adresse2 || "").trim(),
+      mail,
       description: String(rawAd.description || "").trim()
     };
   }
@@ -1129,7 +1141,8 @@ textarea{
       const candidates = normalizeApiCandidates(await ApiClient.findOfferByMail(token, localStorage.getItem("userEmail") || ""));
       if (!candidates.length) return;
 
-      const saved = mapApiAd(candidates.find((candidate) => getApiRecordId(candidate)) || candidates[0]);
+      const savedCandidate = candidates.find((candidate) => getApiRecordId(candidate)) || candidates[0];
+      const saved = mapApiAd(savedCandidate, candidates.indexOf(savedCandidate));
       if (!saved) return;
 
       existingAd = saved;
@@ -1156,25 +1169,65 @@ textarea{
     go(1);
   });
 
-  previewBtn?.addEventListener("click", buildPreview);
-  viewSavedAdBtn?.addEventListener("click", () => {
-    if (!existingAd) {
-      showStatus("Aucune annonce enregistrée trouvée pour le moment.", "info");
+  function rememberOffer(offer) {
+    try {
+      sessionStorage.setItem("selectedOffer", JSON.stringify(offer));
+    } catch (error) {
+      console.warn("Impossible de mémoriser l'annonce sélectionnée :", error);
+    }
+  }
+
+  function buildSavedAdUrl(offer) {
+    const params = new URLSearchParams();
+    if (offer.id) params.set("id", offer.id);
+    params.set("offer", offer.key);
+    return `../annonce/annonceindex.html?${params.toString()}`;
+  }
+
+  async function viewSavedAdPage() {
+    hideStatus();
+    previewBox.classList.remove("show");
+
+    const token = localStorage.getItem("token");
+    const userEmail = localStorage.getItem("userEmail") || "";
+
+    if (!token || !userEmail) {
+      showStatus("Reconnectez-vous avant de consulter votre annonce enregistrée.", "error");
+      go(1);
       return;
     }
 
-    fillAdForm(existingAd);
-    buildPreview();
-    showStatus("Voici votre annonce enregistrée. Vous pouvez la modifier puis cliquer sur Mettre à jour.", "info");
-  });
-  submitAdBtn?.addEventListener("click", submitAd);
+    try {
+      previewBtn.disabled = true;
+      previewBtn.textContent = "Chargement...";
+      showStatus("Recherche de votre annonce enregistrée dans l'API...", "info");
 
-  clearDraftBtn?.addEventListener("click", () => {
-    clearDraft();
-    setPrestationsRows([]);
-    previewBox.classList.remove("show");
-    showStatus("Le brouillon a été effacé.", "success");
-  });
+      const savedAd = await findExistingAdForCurrentUser(token, userEmail);
+      if (!savedAd) {
+        showStatus("Aucune annonce enregistrée trouvée pour le moment.", "info");
+        return;
+      }
+
+      const saved = mapApiAd(savedAd);
+      if (!saved) {
+        showStatus("Impossible de préparer votre annonce enregistrée pour l'affichage.", "error");
+        return;
+      }
+
+      existingAd = saved;
+      rememberOffer(saved);
+      window.location.href = buildSavedAdUrl(saved);
+    } catch (error) {
+      console.error("Impossible d'ouvrir l'annonce enregistrée :", error);
+      showStatus("Impossible d'ouvrir votre annonce enregistrée pour le moment.", "error");
+    } finally {
+      previewBtn.disabled = false;
+      previewBtn.textContent = "Voir mon annonce";
+    }
+  }
+
+  previewBtn?.addEventListener("click", viewSavedAdPage);
+  submitAdBtn?.addEventListener("click", submitAd);
 
   const nav = document.querySelector(".nav");
   const menuToggle = document.querySelector(".menu-toggle");
