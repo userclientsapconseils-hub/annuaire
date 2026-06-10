@@ -198,6 +198,7 @@
     const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 jours
     const userEmailEl = document.getElementById("userEmail");
     const logoutBtn = document.getElementById("logoutBtn");
+    const createAdActions = document.getElementById("createAdActions");
     const adActionBtn = document.getElementById("adActionBtn");
     const draftStatus = document.getElementById("draftStatus");
     const apiOfferStatus = document.getElementById("apiOfferStatus");
@@ -401,12 +402,15 @@
 
         if (!offer) {
           showApiOfferStatus("Aucune annonce enregistrée n'est liée à votre adresse mail pour le moment.", "info");
+          showCreateAdAction();
           return;
         }
 
+        hideCreateAdAction();
         renderApiOffer(offer);
         hideApiOfferStatus();
       } catch (error) {
+        hideCreateAdAction();
         console.error("Impossible de charger l'annonce liée à l'adresse mail :", error);
         showApiOfferStatus("Impossible de charger votre annonce enregistrée pour le moment.", "warning");
       }
