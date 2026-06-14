@@ -369,6 +369,16 @@
       apiOfferStatus.textContent = "";
     }
 
+    function showCreateAdAction() {
+      adActionBtn.textContent = "Créer mon annonce";
+      adActionBtn.href = "../submit/submitindex.html?fromDashboard=1";
+      adActionBtn.style.display = "inline-flex";
+    }
+
+    function hideCreateAdAction() {
+      adActionBtn.style.display = "none";
+    }
+
     function renderApiOffer(offer) {
       const title = offer.entreprise || `${offer.prenom} ${offer.nom}`.trim() || "Votre annonce";
       const location = [offer.cp, offer.ville].filter(Boolean).join(" ");
