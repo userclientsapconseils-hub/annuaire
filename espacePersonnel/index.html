@@ -309,6 +309,10 @@
       return candidates;
     }
 
+    function normalizeEmail(value) {
+      return String(value || "").trim().toLowerCase();
+    }
+
     function normalizePrestations(prestations) {
       if (Array.isArray(prestations)) {
         return prestations.map((item) => ({
@@ -365,6 +369,16 @@
       apiOfferStatus.textContent = "";
     }
 
+    function showCreateAdAction() {
+      adActionBtn.textContent = "Créer mon annonce";
+      adActionBtn.href = "../submit/submitindex.html?fromDashboard=1";
+      adActionBtn.style.display = "inline-flex";
+    }
+
+    function hideCreateAdAction() {
+      adActionBtn.style.display = "none";
+    }
+
     function renderApiOffer(offer) {
       const title = offer.entreprise || `${offer.prenom} ${offer.nom}`.trim() || "Votre annonce";
       const location = [offer.cp, offer.ville].filter(Boolean).join(" ");
@@ -396,9 +410,16 @@
       showApiOfferStatus("Chargement de votre annonce liée à votre adresse mail...", "info");
 
       try {
+        const normalizedUserEmail = normalizeEmail(userEmail);
         const payload = await ApiClient.findOfferByMail(token, userEmail);
-        const offers = normalizeApiCandidates(payload).map(mapOffer).filter(Boolean);
-        const offer = offers.find((candidate) => candidate.mail === userEmail) || offers[0];
+        let offers = normalizeApiCandidates(payload).map(mapOffer).filter(Boolean);
+        let offer = offers.find((candidate) => normalizeEmail(candidate.mail) === normalizedUserEmail);
+
+        if (!offer && typeof ApiClient.findOffers === "function") {
+          const fallbackPayload = await ApiClient.findOffers({}, token);
+          offers = normalizeApiCandidates(fallbackPayload).map(mapOffer).filter(Boolean);
+          offer = offers.find((candidate) => normalizeEmail(candidate.mail) === normalizedUserEmail);
+        }
 
         if (!offer) {
           showApiOfferStatus("Aucune annonce enregistrée n'est liée à votre adresse mail pour le moment.", "info");
