@@ -144,6 +144,20 @@
     .offer-services li{
       margin-bottom:6px;
     }
+    .quote-requests{margin-top:24px;padding:20px;border:1px solid #e5e7eb;border-radius:14px;background:#f9fafb}
+    .quote-requests h2{margin:0 0 8px;font-size:20px}
+    .quote-requests-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
+    .quote-counter{display:inline-flex;min-width:28px;height:28px;padding:0 9px;align-items:center;justify-content:center;border-radius:999px;background:#e53935;color:#fff;font-weight:700}
+    .quote-table-wrap{overflow-x:auto;margin-top:14px}
+    .quote-table{width:100%;border-collapse:collapse;background:#fff;border:1px solid #e5e7eb}
+    .quote-table th,.quote-table td{padding:12px;text-align:left;vertical-align:top;border-bottom:1px solid #e5e7eb;font-size:13px}
+    .quote-table th{background:#f3f4f6;font-size:12px;text-transform:uppercase;color:#4b5563}
+    .quote-table tr:last-child td{border-bottom:0}
+    .quote-customer{font-weight:700}.quote-contact{display:block;color:#4b5563;margin-top:4px}.quote-message{max-width:260px;white-space:pre-wrap}
+    .quote-status{display:inline-flex;padding:5px 9px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap}
+    .quote-status.pending{background:#fff7ed;color:#9a3412}.quote-status.validated{background:#dcfce7;color:#166534}.quote-status.rejected{background:#fee2e2;color:#991b1b}
+    .quote-actions{display:flex;gap:6px;flex-wrap:wrap}.quote-actions button{padding:7px 9px;font-size:12px}.quote-actions .reject{background:#6b7280}
+    .quote-empty{padding:18px;background:#fff;border:1px dashed #d1d5db;border-radius:10px;color:#4b5563}
     @media (max-width:700px){
       .container{
         margin:30px auto;
@@ -158,6 +172,7 @@
       button, .btn-link{
         width:100%;
       }
+      .quote-actions button{width:auto}
     }
   </style>
 </head>
@@ -188,6 +203,18 @@
         <p id="apiOfferStatus" class="status show info">Chargement de votre annonce liée à votre adresse mail...</p>
         <article id="apiOfferCard" class="api-offer-card" aria-live="polite"></article>
       </section>
+
+      <section class="quote-requests" aria-labelledby="quoteRequestsTitle">
+        <div class="quote-requests-header">
+          <div>
+            <h2 id="quoteRequestsTitle">Mes demandes de devis</h2>
+            <p>Validez ou refusez les nouvelles demandes reçues depuis vos annonces.</p>
+          </div>
+          <span class="quote-counter" id="pendingQuoteCount" aria-label="Demandes en attente">0</span>
+        </div>
+        <p id="quoteRequestsStatus" class="status show info">Chargement de vos demandes...</p>
+        <div id="quoteRequestsTable" aria-live="polite"></div>
+      </section>
     </div>
   </div>
 
@@ -203,6 +230,10 @@
     const draftStatus = document.getElementById("draftStatus");
     const apiOfferStatus = document.getElementById("apiOfferStatus");
     const apiOfferCard = document.getElementById("apiOfferCard");
+    const quoteRequestsStatus = document.getElementById("quoteRequestsStatus");
+    const quoteRequestsTable = document.getElementById("quoteRequestsTable");
+    const pendingQuoteCount = document.getElementById("pendingQuoteCount");
+    let currentQuoteRequests = [];
 
     function getStoredSession() {
       const legacyToken = localStorage.getItem("token");
@@ -437,6 +468,125 @@
       }
     }
 
+    function collectQuoteRequests(value, requests, seen) {
+      const parsed = parseApiData(value);
+      if (parsed === null || parsed === undefined) return;
+      if (Array.isArray(parsed)) {
+        parsed.forEach((item) => collectQuoteRequests(item, requests, seen));
+        return;
+      }
+      if (typeof parsed !== "object" || seen.has(parsed)) return;
+      seen.add(parsed);
+      if (Object.prototype.hasOwnProperty.call(parsed, "professionalMail")
+        || Object.prototype.hasOwnProperty.call(parsed, "customerEmail")) {
+        requests.push(parsed);
+      }
+      API_COLLECTION_KEYS.forEach((key) => {
+        if (Object.prototype.hasOwnProperty.call(parsed, key)) {
+          collectQuoteRequests(parsed[key], requests, seen);
+        }
+      });
+    }
+
+    function normalizeQuoteRequests(payload) {
+      const requests = [];
+      collectQuoteRequests(payload, requests, new Set());
+      return requests.map((request) => ({
+        ...request,
+        id: String(request.id || request._id || request.requestId || "").trim(),
+        professionalMail: normalizeEmail(request.professionalMail),
+        customerFirstName: String(request.customerFirstName || "").trim(),
+        customerLastName: String(request.customerLastName || "").trim(),
+        customerEmail: String(request.customerEmail || "").trim(),
+        customerPhone: String(request.customerPhone || "").trim(),
+        service: String(request.service || "Demande à préciser").trim(),
+        postalCode: String(request.postalCode || "").trim(),
+        desiredDate: String(request.desiredDate || "").trim(),
+        message: String(request.message || "").trim(),
+        status: ["pending", "validated", "rejected"].includes(request.status) ? request.status : "pending",
+        createdAt: String(request.createdAt || "").trim()
+      }));
+    }
+
+    function formatQuoteDate(value) {
+      if (!value) return "Non précisée";
+      const date = new Date(value);
+      return Number.isNaN(date.getTime()) ? value : new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium" }).format(date);
+    }
+
+    function renderQuoteRequests() {
+      const statusLabels = { pending: "En attente", validated: "Validée", rejected: "Refusée" };
+      const pendingCount = currentQuoteRequests.filter((request) => request.status === "pending").length;
+      pendingQuoteCount.textContent = String(pendingCount);
+      pendingQuoteCount.setAttribute("aria-label", `${pendingCount} demande${pendingCount > 1 ? "s" : ""} en attente`);
+
+      if (!currentQuoteRequests.length) {
+        quoteRequestsTable.innerHTML = '<p class="quote-empty">Vous n’avez reçu aucune demande de devis pour le moment.</p>';
+        return;
+      }
+
+      const rows = currentQuoteRequests
+        .slice()
+        .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)))
+        .map((request) => {
+          const customer = `${request.customerFirstName} ${request.customerLastName}`.trim() || "Client";
+          const actions = request.status === "pending" ? `
+            <div class="quote-actions">
+              <button type="button" data-quote-id="${escapeHtml(request.id)}" data-quote-status="validated">Valider</button>
+              <button type="button" class="reject" data-quote-id="${escapeHtml(request.id)}" data-quote-status="rejected">Refuser</button>
+            </div>` : "";
+          return `<tr>
+            <td><span class="quote-customer">${escapeHtml(customer)}</span><span class="quote-contact">${escapeHtml(request.customerEmail)}</span><span class="quote-contact">${escapeHtml(request.customerPhone)}</span></td>
+            <td><strong>${escapeHtml(request.service)}</strong><span class="quote-contact">${escapeHtml(request.postalCode || "Lieu non précisé")}</span><span class="quote-contact">Souhait : ${escapeHtml(formatQuoteDate(request.desiredDate))}</span></td>
+            <td class="quote-message">${escapeHtml(request.message || "Aucun détail ajouté.")}</td>
+            <td>${escapeHtml(formatQuoteDate(request.createdAt))}</td>
+            <td><span class="quote-status ${request.status}">${statusLabels[request.status]}</span></td>
+            <td>${actions}</td>
+          </tr>`;
+        }).join("");
+      quoteRequestsTable.innerHTML = `<div class="quote-table-wrap"><table class="quote-table">
+        <thead><tr><th>Client</th><th>Besoin</th><th>Message</th><th>Reçue le</th><th>Statut</th><th>Action</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table></div>`;
+    }
+
+    async function loadQuoteRequests(token, userEmail) {
+      quoteRequestsStatus.className = "status show info";
+      quoteRequestsStatus.textContent = "Chargement de vos demandes de devis...";
+      quoteRequestsTable.innerHTML = "";
+      try {
+        const payload = await ApiClient.findQuoteRequests(token, normalizeEmail(userEmail));
+        currentQuoteRequests = normalizeQuoteRequests(payload)
+          .filter((request) => request.professionalMail === normalizeEmail(userEmail));
+        renderQuoteRequests();
+        quoteRequestsStatus.className = "status";
+        quoteRequestsStatus.textContent = "";
+      } catch (error) {
+        console.error("Impossible de charger les demandes de devis :", error);
+        quoteRequestsStatus.className = "status show warning";
+        quoteRequestsStatus.textContent = "Impossible de charger vos demandes de devis pour le moment.";
+      }
+    }
+
+    quoteRequestsTable.addEventListener("click", async (event) => {
+      const button = event.target.closest("button[data-quote-id]");
+      if (!button) return;
+      const session = getActiveSession();
+      const request = currentQuoteRequests.find((item) => item.id === button.dataset.quoteId);
+      if (!session || !request) return;
+      button.disabled = true;
+      try {
+        await ApiClient.updateQuoteRequestStatus(session.token, request, button.dataset.quoteStatus);
+        request.status = button.dataset.quoteStatus;
+        renderQuoteRequests();
+      } catch (error) {
+        console.error("Impossible de mettre à jour la demande de devis :", error);
+        quoteRequestsStatus.className = "status show warning";
+        quoteRequestsStatus.textContent = "Le statut de la demande n’a pas pu être mis à jour.";
+        button.disabled = false;
+      }
+    });
+
     function showDraftStatus(message, type) {
       draftStatus.className = "status show " + type;
       draftStatus.textContent = message;
@@ -483,6 +633,7 @@
       adActionBtn.style.opacity = "";
       refreshDraftUI();
       loadApiOffer(token, userEmail);
+      loadQuoteRequests(token, userEmail);
 
       if (sessionState === "unknown") {
         showDraftStatus("Connexion conservée. Vérification distante indisponible pour le moment.", "warning");

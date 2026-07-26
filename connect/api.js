@@ -121,12 +121,37 @@
     });
   }
 
+  async function createQuoteRequest(data) {
+    return post({ request: "insert", collection: "quoterequest", data });
+  }
+
+  async function findQuoteRequests(token, professionalMail) {
+    return post({
+      request: "find",
+      collection: "quoterequest",
+      token,
+      data: { professionalMail }
+    });
+  }
+
+  async function updateQuoteRequestStatus(token, quoteRequest, status) {
+    return post({
+      request: "update",
+      collection: "quoterequest",
+      token,
+      data: { ...quoteRequest, status, updatedAt: new Date().toISOString() }
+    });
+  }
+
   global.ApiClient = {
     login,
     validateUserSession,
     registerUser,
     saveOffer,
     findOffers,
-    findOfferByMail
+    findOfferByMail,
+    createQuoteRequest,
+    findQuoteRequests,
+    updateQuoteRequestStatus
   };
 })(window);

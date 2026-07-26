@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Demande de devis</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <section class="hero">
+    <header class="nav">
+      <a class="brand" href="../index.html" aria-label="Retour à l'accueil">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2c-3.86 0-7 3.14-7 7 0 5.25 7 13 7 13s7-7.75 7-13c0-3.86-3.14-7-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/></svg>
+        Accueil
+      </a>
+      <a class="back-link" id="backToOffer" href="../annonces/index.html">← Retour à l’annonce</a>
+    </header>
+
+    <main class="container">
+      <div class="heading">
+        <span class="eyebrow">Votre projet</span>
+        <h1>Demander un devis</h1>
+        <p>Décrivez votre besoin. Votre demande sera préparée avec les informations de l’annonce sélectionnée.</p>
+      </div>
+
+      <div class="layout">
+        <aside class="card offer-card" aria-labelledby="offerHeading">
+          <span class="card-label">Professionnel sélectionné</span>
+          <h2 id="offerHeading">Chargement de l’annonce…</h2>
+          <p class="activity" id="offerActivity"></p>
+          <dl class="offer-details">
+            <div><dt>Localisation</dt><dd id="offerLocation">—</dd></div>
+            <div><dt>Prestations</dt><dd id="offerServices">—</dd></div>
+          </dl>
+          <p class="load-error" id="loadError" role="alert"></p>
+        </aside>
+
+        <section class="card form-card">
+          <form id="quoteForm">
+            <fieldset>
+              <legend>Vos coordonnées</legend>
+              <div class="form-grid">
+                <div class="field"><label for="firstName">Prénom *</label><input id="firstName" name="firstName" autocomplete="given-name" required></div>
+                <div class="field"><label for="lastName">Nom *</label><input id="lastName" name="lastName" autocomplete="family-name" required></div>
+                <div class="field"><label for="email">E-mail *</label><input id="email" name="email" type="email" autocomplete="email" required></div>
+                <div class="field"><label for="phone">Téléphone *</label><input id="phone" name="phone" type="tel" autocomplete="tel" required></div>
+              </div>
+            </fieldset>
+
+            <fieldset>
+              <legend>Votre besoin</legend>
+              <div class="field">
+                <label for="service">Prestation souhaitée *</label>
+                <select id="service" name="service" required><option value="">Chargement des prestations…</option></select>
+              </div>
+              <div class="form-grid">
+                <div class="field"><label for="postalCode">Code postal *</label><input id="postalCode" name="postalCode" inputmode="numeric" maxlength="5" pattern="[0-9]{5}" required></div>
+                <div class="field"><label for="desiredDate">Date souhaitée</label><input id="desiredDate" name="desiredDate" type="date"></div>
+              </div>
+              <div class="field"><label for="message">Décrivez votre projet *</label><textarea id="message" name="message" rows="6" placeholder="Surface, fréquence, contraintes particulières…" required></textarea></div>
+            </fieldset>
+
+            <label class="consent"><input type="checkbox" name="consent" required> <span>J’accepte que mes coordonnées soient transmises à ce professionnel afin qu’il réponde à ma demande. *</span></label>
+            <button class="submit-button" id="submitButton" type="submit" disabled>Envoyer ma demande</button>
+            <p class="privacy">Les informations saisies sont utilisées uniquement pour traiter cette demande de devis.</p>
+            <p class="status" id="formStatus" role="status" aria-live="polite"></p>
+          </form>
+        </section>
+      </div>
+    </main>
+  </section>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script src="../connect/api.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

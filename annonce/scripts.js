@@ -189,7 +189,10 @@ function renderOffer(offer) {
 
   const contactHref = offer.mail ? `mailto:${encodeURIComponent(offer.mail)}?subject=${encodeURIComponent(`Contact pour votre annonce ${title}`)}` : '../connect/index.html';
   document.getElementById('contactButton').href = contactHref;
-  document.getElementById('quoteButton').href = contactHref;
+  const quoteParams = new URLSearchParams();
+  if (offer.id) quoteParams.set('id', offer.id);
+  quoteParams.set('offer', offer.key);
+  document.getElementById('quoteButton').href = `../devis/index.html?${quoteParams.toString()}`;
 }
 
 async function loadDynamicOffer() {
