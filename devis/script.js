@@ -3,6 +3,15 @@ const submitButton = document.getElementById('submitButton');
 const serviceSelect = document.getElementById('service');
 let selectedOffer = null;
 
+try {
+  const session = JSON.parse(localStorage.getItem('authSession'));
+  if (session?.accountType === 'particulier' && session?.email) {
+    document.getElementById('email').value = session.email;
+  }
+} catch (error) {
+  console.warn('Session locale illisible :', error);
+}
+
 function normalizePrestations(value) {
   if (Array.isArray(value)) return value.map((item) => ({
     prestation: String(item?.prestation || item?.prestations || item?.nom || '').trim(),

@@ -43,7 +43,11 @@ function getActiveSession() {
 }
 
 function redirectToPersonalSpace() {
-  window.location.href = "../espacePersonnel/index.html";
+  const session = getActiveSession();
+  const accountType = session?.accountType || localStorage.getItem("accountType") || "pro";
+  window.location.href = accountType === "particulier"
+    ? "../espaceParticulier/index.html"
+    : "../espacePersonnel/index.html";
 }
 
 function userAlreadyConnected() {
@@ -53,7 +57,7 @@ function userAlreadyConnected() {
 
   // On prolonge la session valide pour éviter de redemander les identifiants
   // lorsque l'utilisateur revient sur la page de connexion.
-  persistSession(session.token, session.email);
+  persistSession(session.token, session.email, session.accountType);
   redirectToPersonalSpace();
   return true;
 }
@@ -80,17 +84,27 @@ function extractToken(payload){
   return "";
 }
 
-function persistSession(token, email) {
+function persistSession(token, email, accountType = "pro") {
   const session = {
     token,
     email,
     createdAt: Date.now(),
-    expiresAt: Date.now() + SESSION_TTL_MS
+    expiresAt: Date.now() + SESSION_TTL_MS,
+    accountType
   };
 
   localStorage.setItem(SESSION_KEY, JSON.stringify(session));
   localStorage.setItem("token", token);
   localStorage.setItem("userEmail", email);
+  localStorage.setItem("accountType", accountType);
+}
+
+function extractUsers(payload) {
+  if (typeof payload === "string") { try { return extractUsers(JSON.parse(payload)); } catch { return []; } }
+  if (Array.isArray(payload)) return payload.flatMap(extractUsers);
+  if (!payload || typeof payload !== "object") return [];
+  const users = ("mail" in payload || "type" in payload) ? [payload] : [];
+  return users.concat(["data", "body", "items", "records", "results"].flatMap((key) => key in payload ? extractUsers(payload[key]) : []));
 }
 
 async function checkGuest(guest){
@@ -111,7 +125,14 @@ async function checkGuest(guest){
     const token = extractToken(response?.data?.data)
     if (!token) {throw "id"}
     guest.token = token
-    persistSession(token, guest.mail)
+    let accountType = "pro";
+    try {
+      const users = extractUsers(await ApiClient.findUserByMail(token, guest.mail));
+      accountType = users.find((user) => String(user.mail || "").toLowerCase() === guest.mail.toLowerCase())?.type || "pro";
+    } catch (error) {
+      console.warn("Type de compte indisponible, utilisation de l'espace pro :", error);
+    }
+    persistSession(token, guest.mail, accountType)
     guest.message.textContent = "Connexion réussie"
     guest.message.className = "status show success"
     cookieWrite(token)
