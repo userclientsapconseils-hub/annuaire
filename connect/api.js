@@ -60,17 +60,15 @@
     if (!token || !normalizedEmail) return null;
 
     const payload = await findUserByMail(token, normalizedEmail);
-    const users = extractUsers(payload);
-    const user = users.find(
+    const user = extractUsers(payload).find(
       (candidate) => String(candidate.mail || "").trim().toLowerCase() === normalizedEmail
-    ) || (users.length === 1 ? users[0] : null);
+    );
     if (!user) return null;
 
     const type = String(user.type || "").trim().toLowerCase();
     if (type === "customer" || type === "particulier") return "customer";
     if (type === "pro" || type === "professional" || type === "professionnel") return "pro";
-    // Les comptes historiques ont été créés avant l'ajout du champ `type`.
-    return type ? null : "pro";
+    return null;
   }
 
   async function validateUserSession(token, userEmail) {

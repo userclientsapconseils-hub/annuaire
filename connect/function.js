@@ -113,14 +113,8 @@ async function checkGuest(guest){
     const token = await ApiClient.login(guest.mail, guest.password)
     if (!token) {throw "id"}
     guest.token = token
-    let accountType = "pro"
-    try {
-      accountType = await ApiClient.getUserAccountType(token, guest.mail) || "pro"
-    } catch (error) {
-      // Le token prouve que les identifiants sont valides. Une panne de la
-      // seconde requête ne doit donc pas être présentée comme un mauvais mot de passe.
-      console.warn("Type de compte indisponible, utilisation de l'espace professionnel :", error)
-    }
+    const accountType = await ApiClient.getUserAccountType(token, guest.mail)
+    if (!accountType) {throw "id"}
     persistSession(token, guest.mail, accountType)
     guest.message.textContent = "Connexion réussie"
     guest.message.className = "status show success"
