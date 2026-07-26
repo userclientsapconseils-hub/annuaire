@@ -112,3 +112,7 @@
       color: #991b1b;
       border: 1px solid #fecaca;
     }
+
+/* Keep the shared site navigation above the centred login card. */
+body{flex-direction:column;align-items:stretch;padding:0}
+body>.container{margin:auto;padding:26px}

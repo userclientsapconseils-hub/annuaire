@@ -5,16 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Demande de devis</title>
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="../home/navigation.css" />
 </head>
 <body>
   <section class="hero">
-    <header class="nav">
-      <a class="brand" href="../index.html" aria-label="Retour à l'accueil">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2c-3.86 0-7 3.14-7 7 0 5.25 7 13 7 13s7-7.75 7-13c0-3.86-3.14-7-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/></svg>
-        Accueil
-      </a>
-      <a class="back-link" id="backToOffer" href="../annonces/index.html">← Retour à l’annonce</a>
-    </header>
+    <div data-site-header></div>
 
     <main class="container">
       <div class="heading">
@@ -72,5 +67,6 @@
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <script src="../connect/api.js"></script>
   <script src="script.js"></script>
+  <script src="../home/navigation.js"></script>
 </body>
 </html>
