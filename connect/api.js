@@ -74,6 +74,10 @@
     }
   }
 
+  async function findUserByMail(token, mail) {
+    return post({ request: "find", collection: "user", token, data: { mail } });
+  }
+
 
 
   async function registerUser(email, password, type = "pro") {
@@ -134,6 +138,15 @@
     });
   }
 
+  async function findCustomerQuoteRequests(token, customerEmail) {
+    return post({
+      request: "find",
+      collection: "quoterequest",
+      token,
+      data: { customerEmail }
+    });
+  }
+
   async function updateQuoteRequestStatus(token, quoteRequest, status) {
     return post({
       request: "update",
@@ -146,12 +159,14 @@
   global.ApiClient = {
     login,
     validateUserSession,
+    findUserByMail,
     registerUser,
     saveOffer,
     findOffers,
     findOfferByMail,
     createQuoteRequest,
     findQuoteRequests,
+    findCustomerQuoteRequests,
     updateQuoteRequestStatus
   };
 })(window);

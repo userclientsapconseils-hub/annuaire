@@ -323,6 +323,10 @@ textarea{
   border:1px solid #fed7aa;
   font-size:14px;
 }
+.account-types{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:20px}
+.account-type{padding:22px;text-align:left;border:2px solid var(--stroke);border-radius:12px;background:#fff;cursor:pointer}
+.account-type:hover,.account-type:focus{border-color:var(--red);outline:none}
+.account-type strong{display:block;font-size:18px;margin-bottom:6px}.account-type span{color:#4b5563}
 
 @media (max-width:900px){
   .nav{padding:0 16px}
@@ -360,6 +364,7 @@ textarea{
     grid-template-columns:1fr;
     gap:12px;
   }
+  .account-types{grid-template-columns:1fr}
   .stepper{gap:10px}
   .stepper .line{width:72px}
   .actions{justify-content:stretch}
@@ -411,7 +416,7 @@ textarea{
 
       <a class="btn btn-primary" href="submitindex.html">
         <span aria-hidden="true">+</span>
-        <span>Annonce</span>
+        <span>Inscription</span>
       </a>
     </div>
   </header>
@@ -424,12 +429,14 @@ textarea{
           <span class="dot" data-dot="1" aria-hidden="true"></span>
           <span class="line" aria-hidden="true"></span>
           <span class="dot" data-dot="2" aria-hidden="true"></span>
+          <span class="line" aria-hidden="true"></span>
+          <span class="dot" data-dot="3" aria-hidden="true"></span>
         </div>
       </div>
 
       <div class="panel">
-        <h1>Création de votre annonce professionnelle</h1>
-        <p class="helper">Commencez par créer votre compte, puis renseignez les informations de votre annonce.</p>
+        <h1>Inscription</h1>
+        <p class="helper">Choisissez votre type de compte, créez-le puis, si vous êtes professionnel, renseignez votre annonce.</p>
 
         <div id="resumeNotice" class="notice" style="display:none;">
           Un brouillon d’annonce a été retrouvé. Vous pouvez reprendre votre saisie.
@@ -437,9 +444,18 @@ textarea{
 
         <form id="multiStepForm">
 
-          <!-- STEP 1 : INSCRIPTION -->
           <section class="step is-active" data-step="1">
-            <span class="badge">Étape 1 — Inscription</span>
+            <span class="badge">Étape 1 — Type de compte</span>
+            <h2>Quel compte souhaitez-vous créer ?</h2>
+            <div class="account-types">
+              <button class="account-type" type="button" data-account-type="particulier"><strong>Compte particulier</strong><span>Envoyez des demandes de devis et suivez leur avancement.</span></button>
+              <button class="account-type" type="button" data-account-type="pro"><strong>Compte professionnel</strong><span>Publiez une annonce et gérez les demandes reçues.</span></button>
+            </div>
+          </section>
+
+          <!-- STEP 2 : INSCRIPTION -->
+          <section class="step" data-step="2">
+            <span class="badge">Étape 2 — Inscription</span>
             <h2>Créez votre compte</h2>
 
             <div class="grid">
@@ -459,9 +475,9 @@ textarea{
             </div>
           </section>
 
-          <!-- STEP 2 : ANNONCE -->
-          <section class="step" data-step="2">
-            <span class="badge">Étape 2 — Annonce</span>
+          <!-- STEP 3 : ANNONCE -->
+          <section class="step" data-step="3">
+            <span class="badge">Étape 3 — Annonce</span>
             <h2>Créez votre annonce</h2>
 
             <div class="grid">
@@ -613,6 +629,7 @@ textarea{
 <script>
 (() => {
   let currentStep = 1;
+  let accountType = "";
 
   const DRAFT_KEY = "adDraft";
   const form = document.getElementById("multiStepForm");
@@ -665,13 +682,7 @@ textarea{
 
     dots.forEach((d) => d.classList.remove("is-on", "is-off"));
 
-    if (currentStep === 1) {
-      setDot(1, "on");
-      setDot(2, "off");
-    } else {
-      setDot(1, "on");
-      setDot(2, "on");
-    }
+    [1, 2, 3].forEach((number) => setDot(number, number <= currentStep ? "on" : "off"));
   }
 
   function setDot(n, state) {
@@ -681,7 +692,7 @@ textarea{
   }
 
   function go(step) {
-    currentStep = Math.min(2, Math.max(1, step));
+    currentStep = Math.min(3, Math.max(1, step));
     render();
   }
 
@@ -869,7 +880,7 @@ textarea{
       registerBtn.textContent = "Création en cours...";
       showStatus("Création de votre compte...", "info");
 
-      const insertionPayload = await ApiClient.registerUser(email, password, "pro");
+      const insertionPayload = await ApiClient.registerUser(email, password, accountType);
 
       console.log("Réponse API inscription :", insertionPayload);
 
@@ -883,10 +894,18 @@ textarea{
 
       localStorage.setItem("token", token);
       localStorage.setItem("userEmail", email);
+      localStorage.setItem("accountType", accountType);
+      localStorage.setItem("authSession", JSON.stringify({ token, email, accountType, createdAt: Date.now(), expiresAt: Date.now() + 30 * 24 * 60 * 60 * 1000 }));
+
+      if (accountType === "particulier") {
+        window.location.href = "../espaceParticulier/index.html";
+        return;
+      }
+
       saveDraft();
 
       showStatus("Compte créé avec succès. Vous pouvez maintenant créer votre annonce.", "success");
-      go(2);
+      go(3);
 
     } catch (error) {
       console.error("Erreur API inscription :", error);
@@ -940,14 +959,14 @@ textarea{
     const token = localStorage.getItem("token");
     if (!token) {
       showStatus("Token introuvable. Créez d'abord un compte avant de publier une annonce.", "error");
-      go(1);
+      go(2);
       return;
     }
 
     const userEmail = localStorage.getItem("userEmail") || "";
     if (!userEmail) {
       showStatus("Adresse mail introuvable. Reconnectez-vous avant de publier une annonce.", "error");
-      go(1);
+      go(2);
       return;
     }
 
@@ -1149,7 +1168,7 @@ textarea{
       fillAdForm(saved);
       setSubmitButtonLabel();
       saveDraft();
-      go(2);
+      go(3);
       showStatus("Annonce enregistrée retrouvée. Vous pouvez la consulter et la modifier.", "info");
     } catch (error) {
       console.error("Impossible de charger l'annonce existante :", error);
@@ -1157,6 +1176,13 @@ textarea{
   }
 
   registerBtn?.addEventListener("click", registerUser);
+  document.querySelectorAll("[data-account-type]").forEach((button) => {
+    button.addEventListener("click", () => {
+      accountType = button.dataset.accountType;
+      go(2);
+      showStatus(`Vous créez un compte ${accountType}.`, "info");
+    });
+  });
   addPrestationBtn?.addEventListener("click", () => {
     createPrestationRow();
     saveDraft();
@@ -1166,7 +1192,7 @@ textarea{
     previewBox.classList.remove("show");
     hideStatus();
     saveDraft();
-    go(1);
+    go(2);
   });
 
   function rememberOffer(offer) {
@@ -1193,7 +1219,7 @@ textarea{
 
     if (!token || !userEmail) {
       showStatus("Reconnectez-vous avant de consulter votre annonce enregistrée.", "error");
-      go(1);
+      go(3);
       return;
     }
 
@@ -1272,7 +1298,8 @@ textarea{
 
   if (savedToken && savedEmail) {
     if (foundDraft || shouldResume || fromDashboard) {
-      go(2);
+      accountType = localStorage.getItem("accountType") || "pro";
+      go(3);
       showStatus("Vous êtes connecté. Vous pouvez reprendre votre annonce.", "info");
     }
     loadSavedAd(savedToken);
