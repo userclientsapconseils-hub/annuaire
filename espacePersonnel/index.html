@@ -444,7 +444,10 @@
         const normalizedUserEmail = normalizeEmail(userEmail);
         const payload = await ApiClient.findOfferByMail(token, userEmail);
         let offers = normalizeApiCandidates(payload).map(mapOffer).filter(Boolean);
-        let offer = offers.find((candidate) => normalizeEmail(candidate.mail) === normalizedUserEmail);
+        // The API has already filtered this response by mail. Some historical
+        // records do not return their `mail` field, so keep the first result as
+        // a fallback instead of discarding an announcement that was found.
+        let offer = offers.find((candidate) => normalizeEmail(candidate.mail) === normalizedUserEmail) || offers[0];
 
         if (!offer && typeof ApiClient.findOffers === "function") {
           const fallbackPayload = await ApiClient.findOffers({}, token);
