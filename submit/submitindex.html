@@ -414,7 +414,7 @@ textarea{
             <span class="badge">Étape 1 — Type de compte</span>
             <h2>Quel compte souhaitez-vous créer ?</h2>
             <div class="account-types">
-              <button class="account-type" type="button" data-account-type="particulier"><strong>Compte particulier</strong><span>Envoyez des demandes de devis et suivez leur avancement.</span></button>
+              <button class="account-type" type="button" data-account-type="customer"><strong>Compte particulier</strong><span>Envoyez des demandes de devis et suivez leur avancement.</span></button>
               <button class="account-type" type="button" data-account-type="pro"><strong>Compte professionnel</strong><span>Publiez une annonce et gérez les demandes reçues.</span></button>
             </div>
           </section>
@@ -863,7 +863,7 @@ textarea{
       localStorage.setItem("accountType", accountType);
       localStorage.setItem("authSession", JSON.stringify({ token, email, accountType, createdAt: Date.now(), expiresAt: Date.now() + 30 * 24 * 60 * 60 * 1000 }));
 
-      if (accountType === "particulier") {
+      if (accountType === "customer") {
         window.location.href = "../espaceParticulier/index.html";
         return;
       }
@@ -1146,7 +1146,7 @@ textarea{
     button.addEventListener("click", () => {
       accountType = button.dataset.accountType;
       go(2);
-      showStatus(`Vous créez un compte ${accountType}.`, "info");
+      showStatus(`Vous créez un compte ${accountType === "customer" ? "particulier" : "professionnel"}.`, "info");
     });
   });
   addPrestationBtn?.addEventListener("click", () => {
