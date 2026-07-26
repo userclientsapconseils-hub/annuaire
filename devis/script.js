@@ -5,7 +5,7 @@ let selectedOffer = null;
 
 try {
   const session = JSON.parse(localStorage.getItem('authSession'));
-  if (session?.accountType === 'particulier' && session?.email) {
+  if ((session?.accountType === 'customer' || session?.accountType === 'particulier') && session?.email) {
     document.getElementById('email').value = session.email;
   }
 } catch (error) {

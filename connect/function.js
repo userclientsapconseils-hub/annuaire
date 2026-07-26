@@ -45,7 +45,7 @@ function getActiveSession() {
 function redirectToPersonalSpace() {
   const session = getActiveSession();
   const accountType = session?.accountType || localStorage.getItem("accountType") || "pro";
-  window.location.href = accountType === "particulier"
+  window.location.href = accountType === "customer" || accountType === "particulier"
     ? "../espaceParticulier/index.html"
     : "../espacePersonnel/index.html";
 }

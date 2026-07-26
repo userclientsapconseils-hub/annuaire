@@ -77,13 +77,15 @@
 
 
   async function registerUser(email, password, type = "pro") {
+    const apiType = type === "particulier" ? "customer" : type;
+
     return post({
       request: "insert",
       collection: "user",
       data: {
         mail: email,
         password: password,
-        type
+        type: apiType
       }
     });
   }
