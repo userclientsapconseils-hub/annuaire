@@ -37,6 +37,40 @@
     return null;
   }
 
+  function extractUsers(payload) {
+    if (typeof payload === "string") {
+      try {
+        return extractUsers(JSON.parse(payload));
+      } catch {
+        return [];
+      }
+    }
+    if (Array.isArray(payload)) return payload.flatMap(extractUsers);
+    if (!payload || typeof payload !== "object") return [];
+
+    const users = ("mail" in payload || "type" in payload) ? [payload] : [];
+    return users.concat(
+      ["data", "body", "items", "Items", "records", "results"]
+        .flatMap((key) => key in payload ? extractUsers(payload[key]) : [])
+    );
+  }
+
+  async function getUserAccountType(token, userEmail) {
+    const normalizedEmail = String(userEmail || "").trim().toLowerCase();
+    if (!token || !normalizedEmail) return null;
+
+    const payload = await findUserByMail(token, normalizedEmail);
+    const user = extractUsers(payload).find(
+      (candidate) => String(candidate.mail || "").trim().toLowerCase() === normalizedEmail
+    );
+    if (!user) return null;
+
+    const type = String(user.type || "").trim().toLowerCase();
+    if (type === "customer" || type === "particulier") return "customer";
+    if (type === "pro" || type === "professional" || type === "professionnel") return "pro";
+    return null;
+  }
+
   async function validateUserSession(token, userEmail) {
     if (!token || !userEmail) return "invalid";
 
@@ -48,23 +82,11 @@
         data: { mail: userEmail }
       });
 
-      if (payload === null || payload === undefined) return "invalid";
-      if (Array.isArray(payload)) return payload.length > 0 ? "valid" : "invalid";
-
-      if (typeof payload === "string") {
-        try {
-          const parsed = JSON.parse(payload);
-          if (Array.isArray(parsed)) return parsed.length > 0 ? "valid" : "invalid";
-          if (parsed && typeof parsed === "object") return Object.keys(parsed).length > 0 ? "valid" : "invalid";
-          return "invalid";
-        } catch {
-          return payload.trim() !== "" ? "valid" : "invalid";
-        }
-      }
-
-      if (typeof payload === "object") return Object.keys(payload).length > 0 ? "valid" : "invalid";
-
-      return "unknown";
+      const normalizedEmail = String(userEmail).trim().toLowerCase();
+      const matchingUser = extractUsers(payload).some(
+        (user) => String(user.mail || "").trim().toLowerCase() === normalizedEmail
+      );
+      return matchingUser ? "valid" : "invalid";
     } catch (error) {
       console.error("Impossible de vérifier la session pour le moment :", error);
       if (error?.response?.status === 401 || error?.response?.status === 403) {
@@ -160,6 +182,7 @@
 
   global.ApiClient = {
     login,
+    getUserAccountType,
     validateUserSession,
     findUserByMail,
     registerUser,
