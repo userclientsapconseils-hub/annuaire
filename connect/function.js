@@ -27,6 +27,7 @@ function clearSession() {
   localStorage.removeItem(SESSION_KEY);
   localStorage.removeItem("token");
   localStorage.removeItem("userEmail");
+  localStorage.removeItem("accountType");
 }
 
 function getActiveSession() {
@@ -109,28 +110,16 @@ function extractUsers(payload) {
 
 async function checkGuest(guest){
   try{
-  let url = 'https://de3qg7ntqblkinxmxfhqoisuhi0pckix.lambda-url.eu-west-3.on.aws/' //mongoProd
-  let body = {
-      request:'token',
-      collection:'user',
-      data:{
-        mail:guest.mail,
-        password:guest.password,
-      }
-    }
-    let response = await axios({method:'post', url:url, headers:{}, data:body})
-      .then(response => {return response})
-      .catch(response=>{throw "id"})
-    //if success
-    const token = extractToken(response?.data?.data)
+    const token = await ApiClient.login(guest.mail, guest.password)
     if (!token) {throw "id"}
     guest.token = token
-    let accountType = "pro";
+    let accountType = "pro"
     try {
-      const users = extractUsers(await ApiClient.findUserByMail(token, guest.mail));
-      accountType = users.find((user) => String(user.mail || "").toLowerCase() === guest.mail.toLowerCase())?.type || "pro";
+      accountType = await ApiClient.getUserAccountType(token, guest.mail) || "pro"
     } catch (error) {
-      console.warn("Type de compte indisponible, utilisation de l'espace pro :", error);
+      // Le token prouve que les identifiants sont valides. Une panne de la
+      // seconde requête ne doit donc pas être présentée comme un mauvais mot de passe.
+      console.warn("Type de compte indisponible, utilisation de l'espace professionnel :", error)
     }
     persistSession(token, guest.mail, accountType)
     guest.message.textContent = "Connexion réussie"
@@ -145,16 +134,17 @@ async function checkGuest(guest){
 
 function cookieWrite(token){
   document.cookie = "token="+encodeURIComponent(token)+"; path=/annuaire; max-age="+(SESSION_TTL_MS / 1000)+"; SameSite=Lax; Secure"
-  console.log(decodeURIComponent(document.cookie))
 }
 
 function changementStyleBoutton(guest, connectionEnCours){
   if(connectionEnCours){
     guest.button.className = "button disabled";
+    guest.button.disabled = true;
     guest.button.textContent = "Connexion en cours...";
     guest.message.className = "status"
   }else{
     guest.button.className = "button";
+    guest.button.disabled = false;
     guest.button.textContent = "Se connecter"
   }
 }
