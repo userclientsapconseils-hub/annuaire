@@ -9,32 +9,84 @@
     return response?.data?.data;
   }
 
-  async function login(email, password) {
-    const payload = await post({
+  async function login(email, password, accountType = "") {
+    const normalizedType = accountType === "particulier" ? "customer" : accountType;
+    const data = {
+      mail: email,
+      password: password
+    };
+    if (normalizedType) data.type = normalizedType;
+
+    let payload = await post({
       request: "token",
       collection: "user",
-      data: {
-        mail: email,
-        password: password
-      }
+      data
     });
 
-    if (!payload) return null;
+    // Compatibilité avec les anciens comptes professionnels, créés avant que
+    // le champ `type` soit enregistré en base.
+    if (!payload && normalizedType === "pro") {
+      payload = await post({
+        request: "token",
+        collection: "user",
+        data: { mail: email, password: password }
+      });
+    }
 
+    return extractToken(payload);
+  }
+
+  function extractToken(payload) {
+    if (!payload) return null;
     if (typeof payload === "string") {
       try {
-        const parsed = JSON.parse(payload);
-        return parsed?.token || null;
+        return extractToken(JSON.parse(payload));
       } catch {
-        return payload;
+        return payload.trim() || null;
       }
     }
+    if (typeof payload !== "object") return null;
+    if (typeof payload.token === "string") return payload.token;
+    return extractToken(payload.data) || extractToken(payload.body);
+  }
 
-    if (typeof payload === "object") {
-      return payload?.token || null;
+  function extractUsers(payload) {
+    if (typeof payload === "string") {
+      try {
+        return extractUsers(JSON.parse(payload));
+      } catch {
+        return [];
+      }
     }
+    if (Array.isArray(payload)) return payload.flatMap(extractUsers);
+    if (!payload || typeof payload !== "object") return [];
 
-    return null;
+    const users = ("mail" in payload || "type" in payload) ? [payload] : [];
+    return users.concat(
+      ["data", "body", "items", "Items", "records", "results"]
+        .flatMap((key) => key in payload ? extractUsers(payload[key]) : [])
+    );
+  }
+
+  async function getUserAccountType(token, userEmail) {
+    const normalizedEmail = String(userEmail || "").trim().toLowerCase();
+    if (!token || !normalizedEmail) return null;
+
+    const payload = await findUserByMail(token, normalizedEmail);
+    const users = extractUsers(payload);
+    const matchingUsers = users.filter(
+      (candidate) => String(candidate.mail || "").trim().toLowerCase() === normalizedEmail
+    );
+    const user = matchingUsers.length === 1
+      ? matchingUsers[0]
+      : (matchingUsers.length === 0 && users.length === 1 ? users[0] : null);
+    if (!user) return null;
+
+    const type = String(user.type || "").trim().toLowerCase();
+    if (type === "customer" || type === "particulier") return "customer";
+    if (type === "pro" || type === "professional" || type === "professionnel") return "pro";
+    // Les comptes historiques ont été créés avant l'ajout du champ `type`.
+    return type ? null : "pro";
   }
 
   function extractUsers(payload) {

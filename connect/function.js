@@ -122,6 +122,7 @@ async function checkGuest(guest){
   //if fail
   }catch(e){
     if(e=="id"){throw e}
+    if(e?.response?.status===401||e?.response?.status===403){throw "id"}
     else{throw "serveur"}
   }
 }
@@ -152,6 +153,7 @@ async function main(){
   let guest = {
     mail: document.getElementById("email").value.trim(),
     password: document.getElementById("password").value,
+    accountType: document.getElementById("accountType").value,
     token: '',  
     button: document.getElementById("button"),
     message: document.getElementById("message"),
@@ -175,7 +177,7 @@ async function main(){
     const messageList={
       mail:"Veuillez indiquer votre adresse mail",
       password:"Veuillez indiquer votre mot de passe",
-      id:"Le couple mail/mot de passe ne correpond pas",
+      id:"Le couple mail/mot de passe ne correspond pas",
       serveur:"Veuillez vérifier votre connexion / nos serveurs connaissent une pause, veuillez réessayer plus tard",
     }
     guest.message.textContent=messageList[e]
