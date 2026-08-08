@@ -7,6 +7,7 @@
 </head>
 
 <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script src="api.js"></script>
 <script src="function.js"></script>
 
 
@@ -28,16 +29,31 @@
       </div>
 
       <div class="field">
+        <label for="accountType">Type de compte</label>
+        <select id="accountType" name="accountType" required>
+          <option value="pro">Professionnel</option>
+          <option value="customer">Particulier</option>
+        </select>
+        <small>Si vous utilisez le même e-mail pour les deux comptes, choisissez l’espace correspondant et utilisez son mot de passe dédié.</small>
+      </div>
+
+      <div class="field">
         <!--<button id="submitBtn" type="submit" class="btn" onclick="tokenCreate()">Se connecter 2</button>
         <button id="submitBtn" class="btn" onclick="tokenCreate()">Se connecter 2</button>-->
         <!--ici un objet bouton refresh la page et non un div (jsppk), ce qui ne permet pas de lancer la fonction js-->
-        <div id="button" class="button" onclick="main()">Se connecter 7</div>
+        <button id="button" class="button" type="submit">Se connecter</button>
       </div>
     </form>
 
     <p id="message" class="status"></p>
   </div>
   <script src="../home/navigation.js"></script>
+  <script>
+    document.getElementById("loginForm").addEventListener("submit", function (event) {
+      event.preventDefault();
+      main();
+    });
+  </script>
 </body>
 
   

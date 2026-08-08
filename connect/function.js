@@ -27,6 +27,7 @@ function clearSession() {
   localStorage.removeItem(SESSION_KEY);
   localStorage.removeItem("token");
   localStorage.removeItem("userEmail");
+  localStorage.removeItem("accountType");
 }
 
 function getActiveSession() {
@@ -109,52 +110,34 @@ function extractUsers(payload) {
 
 async function checkGuest(guest){
   try{
-  let url = 'https://de3qg7ntqblkinxmxfhqoisuhi0pckix.lambda-url.eu-west-3.on.aws/' //mongoProd
-  let body = {
-      request:'token',
-      collection:'user',
-      data:{
-        mail:guest.mail,
-        password:guest.password,
-      }
-    }
-    let response = await axios({method:'post', url:url, headers:{}, data:body})
-      .then(response => {return response})
-      .catch(response=>{throw "id"})
-    //if success
-    const token = extractToken(response?.data?.data)
+    const token = await ApiClient.login(guest.mail, guest.password, guest.accountType)
     if (!token) {throw "id"}
     guest.token = token
-    let accountType = "pro";
-    try {
-      const users = extractUsers(await ApiClient.findUserByMail(token, guest.mail));
-      accountType = users.find((user) => String(user.mail || "").toLowerCase() === guest.mail.toLowerCase())?.type || "pro";
-    } catch (error) {
-      console.warn("Type de compte indisponible, utilisation de l'espace pro :", error);
-    }
-    persistSession(token, guest.mail, accountType)
+    persistSession(token, guest.mail, guest.accountType)
     guest.message.textContent = "Connexion réussie"
     guest.message.className = "status show success"
     cookieWrite(token)
   //if fail
   }catch(e){
     if(e=="id"){throw e}
+    if(e?.response?.status===401||e?.response?.status===403){throw "id"}
     else{throw "serveur"}
   }
 }
 
 function cookieWrite(token){
   document.cookie = "token="+encodeURIComponent(token)+"; path=/annuaire; max-age="+(SESSION_TTL_MS / 1000)+"; SameSite=Lax; Secure"
-  console.log(decodeURIComponent(document.cookie))
 }
 
 function changementStyleBoutton(guest, connectionEnCours){
   if(connectionEnCours){
     guest.button.className = "button disabled";
+    guest.button.disabled = true;
     guest.button.textContent = "Connexion en cours...";
     guest.message.className = "status"
   }else{
     guest.button.className = "button";
+    guest.button.disabled = false;
     guest.button.textContent = "Se connecter"
   }
 }
@@ -168,6 +151,7 @@ async function main(){
   let guest = {
     mail: document.getElementById("email").value.trim(),
     password: document.getElementById("password").value,
+    accountType: document.getElementById("accountType").value,
     token: '',  
     button: document.getElementById("button"),
     message: document.getElementById("message"),
@@ -191,7 +175,7 @@ async function main(){
     const messageList={
       mail:"Veuillez indiquer votre adresse mail",
       password:"Veuillez indiquer votre mot de passe",
-      id:"Le couple mail/mot de passe ne correpond pas",
+      id:"Le couple mail/mot de passe ne correspond pas",
       serveur:"Veuillez vérifier votre connexion / nos serveurs connaissent une pause, veuillez réessayer plus tard",
     }
     guest.message.textContent=messageList[e]

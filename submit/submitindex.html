@@ -820,8 +820,8 @@ textarea{
     return null;
   }
 
-  async function requestTokenForCredentials(email, password) {
-    return ApiClient.login(email, password);
+  async function requestTokenForCredentials(email, password, type) {
+    return ApiClient.login(email, password, type);
   }
 
   async function registerUser() {
@@ -851,7 +851,7 @@ textarea{
       console.log("Réponse API inscription :", insertionPayload);
 
       const insertionToken = extractTokenFromPayload(insertionPayload);
-      const token = insertionToken || await requestTokenForCredentials(email, password);
+      const token = insertionToken || await requestTokenForCredentials(email, password, accountType);
 
       if (!token) {
         showStatus("Le compte semble créé, mais la connexion automatique a échoué. Vérifiez vos identifiants sur la page Connexion.", "error");

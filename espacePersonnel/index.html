@@ -259,16 +259,18 @@
       }
     }
 
-    function persistSession(token, email) {
+    function persistSession(token, email, accountType = "pro") {
       const session = {
         token,
         email,
         createdAt: Date.now(),
-        expiresAt: Date.now() + SESSION_TTL_MS
+        expiresAt: Date.now() + SESSION_TTL_MS,
+        accountType
       };
       localStorage.setItem(SESSION_KEY, JSON.stringify(session));
       localStorage.setItem("token", token);
       localStorage.setItem("userEmail", email);
+      localStorage.setItem("accountType", accountType);
     }
 
     function getActiveSession() {
@@ -286,6 +288,7 @@
       localStorage.removeItem(SESSION_KEY);
       localStorage.removeItem("token");
       localStorage.removeItem("userEmail");
+      localStorage.removeItem("accountType");
       window.location.href = "../connect/index.html";
     }
 
@@ -622,27 +625,34 @@
         return;
       }
 
-      persistSession(token, userEmail);
+      let accountType;
+      try {
+        accountType = await ApiClient.getUserAccountType(token, userEmail)
+          || session.accountType
+          || localStorage.getItem("accountType");
+      } catch (error) {
+        console.error("Impossible de vérifier la session :", error);
+        accountType = session.accountType || localStorage.getItem("accountType");
+      }
+      if (accountType === "customer" || accountType === "particulier") {
+        window.location.href = "../espaceParticulier/index.html";
+        return;
+      }
+      if (accountType !== "pro") {
+        forceLogout();
+        return;
+      }
+      persistSession(token, userEmail, accountType);
       userEmailEl.innerText = userEmail || "Non renseigné";
       showDraftStatus("Vérification de votre session...", "info");
       adActionBtn.style.pointerEvents = "none";
       adActionBtn.style.opacity = "0.6";
-
-      const sessionState = await ApiClient.validateUserSession(token, userEmail);
-      if (sessionState === "invalid") {
-        forceLogout();
-        return;
-      }
 
       adActionBtn.style.pointerEvents = "";
       adActionBtn.style.opacity = "";
       refreshDraftUI();
       loadApiOffer(token, userEmail);
       loadQuoteRequests(token, userEmail);
-
-      if (sessionState === "unknown") {
-        showDraftStatus("Connexion conservée. Vérification distante indisponible pour le moment.", "warning");
-      }
     }
 
     initDashboard();

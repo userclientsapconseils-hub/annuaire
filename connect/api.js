@@ -9,32 +9,71 @@
     return response?.data?.data;
   }
 
-  async function login(email, password) {
+  async function login(email, password, accountType = "") {
+    // Le mot de passe distingue deux comptes utilisant la même adresse.
+    // `accountType` sert au routage du front, mais l'API de token historique
+    // n'accepte que le couple mail/mot de passe.
+    void accountType;
     const payload = await post({
       request: "token",
       collection: "user",
-      data: {
-        mail: email,
-        password: password
-      }
+      data: { mail: email, password: password }
     });
 
-    if (!payload) return null;
+    return extractToken(payload);
+  }
 
+  function extractToken(payload) {
+    if (!payload) return null;
     if (typeof payload === "string") {
       try {
-        const parsed = JSON.parse(payload);
-        return parsed?.token || null;
+        return extractToken(JSON.parse(payload));
       } catch {
-        return payload;
+        return payload.trim() || null;
       }
     }
+    if (typeof payload !== "object") return null;
+    if (typeof payload.token === "string") return payload.token;
+    return extractToken(payload.data) || extractToken(payload.body);
+  }
 
-    if (typeof payload === "object") {
-      return payload?.token || null;
+  function extractUsers(payload) {
+    if (typeof payload === "string") {
+      try {
+        return extractUsers(JSON.parse(payload));
+      } catch {
+        return [];
+      }
     }
+    if (Array.isArray(payload)) return payload.flatMap(extractUsers);
+    if (!payload || typeof payload !== "object") return [];
 
-    return null;
+    const users = ("mail" in payload || "type" in payload) ? [payload] : [];
+    return users.concat(
+      ["data", "body", "items", "Items", "records", "results"]
+        .flatMap((key) => key in payload ? extractUsers(payload[key]) : [])
+    );
+  }
+
+  async function getUserAccountType(token, userEmail) {
+    const normalizedEmail = String(userEmail || "").trim().toLowerCase();
+    if (!token || !normalizedEmail) return null;
+
+    const payload = await findUserByMail(token, normalizedEmail);
+    const users = extractUsers(payload);
+    const matchingUsers = users.filter(
+      (candidate) => String(candidate.mail || "").trim().toLowerCase() === normalizedEmail
+    );
+    const user = matchingUsers.length === 1
+      ? matchingUsers[0]
+      : (matchingUsers.length === 0 && users.length === 1 ? users[0] : null);
+    if (!user) return null;
+
+    const type = String(user.type || "").trim().toLowerCase();
+    if (type === "customer" || type === "particulier") return "customer";
+    if (type === "pro" || type === "professional" || type === "professionnel") return "pro";
+    // Les comptes historiques ont été créés avant l'ajout du champ `type`.
+    return type ? null : "pro";
   }
 
   async function validateUserSession(token, userEmail) {
@@ -48,23 +87,11 @@
         data: { mail: userEmail }
       });
 
-      if (payload === null || payload === undefined) return "invalid";
-      if (Array.isArray(payload)) return payload.length > 0 ? "valid" : "invalid";
-
-      if (typeof payload === "string") {
-        try {
-          const parsed = JSON.parse(payload);
-          if (Array.isArray(parsed)) return parsed.length > 0 ? "valid" : "invalid";
-          if (parsed && typeof parsed === "object") return Object.keys(parsed).length > 0 ? "valid" : "invalid";
-          return "invalid";
-        } catch {
-          return payload.trim() !== "" ? "valid" : "invalid";
-        }
-      }
-
-      if (typeof payload === "object") return Object.keys(payload).length > 0 ? "valid" : "invalid";
-
-      return "unknown";
+      const normalizedEmail = String(userEmail).trim().toLowerCase();
+      const matchingUser = extractUsers(payload).some(
+        (user) => String(user.mail || "").trim().toLowerCase() === normalizedEmail
+      );
+      return matchingUser ? "valid" : "invalid";
     } catch (error) {
       console.error("Impossible de vérifier la session pour le moment :", error);
       if (error?.response?.status === 401 || error?.response?.status === 403) {
@@ -160,6 +187,7 @@
 
   global.ApiClient = {
     login,
+    getUserAccountType,
     validateUserSession,
     findUserByMail,
     registerUser,
