@@ -110,10 +110,12 @@ function extractUsers(payload) {
 
 async function checkGuest(guest){
   try{
-    const token = await ApiClient.login(guest.mail, guest.password, guest.accountType)
+    const token = await ApiClient.login(guest.mail, guest.password)
     if (!token) {throw "id"}
     guest.token = token
-    persistSession(token, guest.mail, guest.accountType)
+    const accountType = await ApiClient.getUserAccountType(token, guest.mail)
+    if (!accountType) {throw "id"}
+    persistSession(token, guest.mail, accountType)
     guest.message.textContent = "Connexion réussie"
     guest.message.className = "status show success"
     cookieWrite(token)

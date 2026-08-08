@@ -89,6 +89,40 @@
     return type ? null : "pro";
   }
 
+  function extractUsers(payload) {
+    if (typeof payload === "string") {
+      try {
+        return extractUsers(JSON.parse(payload));
+      } catch {
+        return [];
+      }
+    }
+    if (Array.isArray(payload)) return payload.flatMap(extractUsers);
+    if (!payload || typeof payload !== "object") return [];
+
+    const users = ("mail" in payload || "type" in payload) ? [payload] : [];
+    return users.concat(
+      ["data", "body", "items", "Items", "records", "results"]
+        .flatMap((key) => key in payload ? extractUsers(payload[key]) : [])
+    );
+  }
+
+  async function getUserAccountType(token, userEmail) {
+    const normalizedEmail = String(userEmail || "").trim().toLowerCase();
+    if (!token || !normalizedEmail) return null;
+
+    const payload = await findUserByMail(token, normalizedEmail);
+    const user = extractUsers(payload).find(
+      (candidate) => String(candidate.mail || "").trim().toLowerCase() === normalizedEmail
+    );
+    if (!user) return null;
+
+    const type = String(user.type || "").trim().toLowerCase();
+    if (type === "customer" || type === "particulier") return "customer";
+    if (type === "pro" || type === "professional" || type === "professionnel") return "pro";
+    return null;
+  }
+
   async function validateUserSession(token, userEmail) {
     if (!token || !userEmail) return "invalid";
 
