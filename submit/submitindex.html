@@ -824,6 +824,16 @@ textarea{
     return ApiClient.login(email, password, type);
   }
 
+  async function passwordAlreadyUsedForOtherAccount(email, password) {
+    const otherAccountType = accountType === "customer" ? "pro" : "customer";
+    try {
+      return Boolean(await ApiClient.login(email, password, otherAccountType));
+    } catch (error) {
+      if (error?.response?.status === 401 || error?.response?.status === 403) return false;
+      throw error;
+    }
+  }
+
   async function registerUser() {
     hideStatus();
     previewBox.classList.remove("show");
@@ -845,6 +855,11 @@ textarea{
       registerBtn.disabled = true;
       registerBtn.textContent = "Création en cours...";
       showStatus("Création de votre compte...", "info");
+
+      if (await passwordAlreadyUsedForOtherAccount(email, password)) {
+        showStatus("Cette adresse et ce mot de passe sont déjà utilisés pour l’autre type de compte. Choisissez un mot de passe différent.", "error");
+        return;
+      }
 
       const insertionPayload = await ApiClient.registerUser(email, password, accountType);
 

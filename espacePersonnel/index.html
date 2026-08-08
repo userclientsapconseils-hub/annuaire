@@ -627,15 +627,10 @@
 
       let accountType;
       try {
-        accountType = await ApiClient.getUserAccountType(token, userEmail)
-          || session.accountType
-          || localStorage.getItem("accountType");
+        accountType = await ApiClient.getUserAccountType(token, userEmail);
       } catch (error) {
         console.error("Impossible de vérifier la session :", error);
-        accountType = session.accountType || localStorage.getItem("accountType");
-      }
-      if (accountType === "customer" || accountType === "particulier") {
-        window.location.href = "../espaceParticulier/index.html";
+        showDraftStatus("Vérification distante indisponible. Veuillez réessayer dans quelques instants.", "warning");
         return;
       }
       if (accountType !== "pro") {

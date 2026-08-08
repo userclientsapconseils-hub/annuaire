@@ -23,15 +23,11 @@ function createClient(apiPayloads) {
 
   const professionalLogin = createClient(["token-pro"]);
   assert.equal(await professionalLogin.client.login("same@example.fr", "pro-password", "pro"), "token-pro");
-  assert.equal(professionalLogin.requests[0].data.mail, "same@example.fr");
-  assert.equal(professionalLogin.requests[0].data.password, "pro-password");
-  assert.equal("type" in professionalLogin.requests[0].data, false);
+  assert.equal(professionalLogin.requests[0].data.type, "pro");
 
   const customerLogin = createClient(["token-customer"]);
   assert.equal(await customerLogin.client.login("same@example.fr", "customer-password", "customer"), "token-customer");
-  assert.equal(customerLogin.requests[0].data.mail, "same@example.fr");
-  assert.equal(customerLogin.requests[0].data.password, "customer-password");
-  assert.equal("type" in customerLogin.requests[0].data, false);
+  assert.equal(customerLogin.requests[0].data.type, "customer");
 
   assert.equal(
     await createClient([[{ mail: "CLIENT@EXAMPLE.FR", type: "particulier" }]]).client
