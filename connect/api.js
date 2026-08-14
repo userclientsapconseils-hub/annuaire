@@ -16,6 +16,15 @@
     return "";
   }
 
+  function normalizeTokenString(value) {
+    const token = String(value || "").trim();
+    const rejectedValues = new Set(["false", "null", "undefined", "not connected", "not found", "unauthorized"]);
+    if (token.length < 8) return null;
+    if (/\s/.test(token)) return null;
+    if (rejectedValues.has(token.toLowerCase())) return null;
+    return token;
+  }
+
   async function requestLoginToken(email, password, type = "") {
     const data = { mail: email, password: password };
     const normalizedType = normalizeAccountType(type);
@@ -66,11 +75,18 @@
       try {
         return extractToken(JSON.parse(payload));
       } catch {
-        return payload.trim() || null;
+        return normalizeTokenString(payload);
       }
     }
+    if (Array.isArray(payload)) {
+      for (const item of payload) {
+        const token = extractToken(item);
+        if (token) return token;
+      }
+      return null;
+    }
     if (typeof payload !== "object") return null;
-    if (typeof payload.token === "string") return payload.token;
+    if (typeof payload.token === "string") return normalizeTokenString(payload.token);
     return extractToken(payload.data) || extractToken(payload.body);
   }
 
@@ -155,7 +171,7 @@
       );
       return matchingUser ? "valid" : "invalid";
     } catch (error) {
-      console.error("Impossible de vérifier la session pour le moment :", error);
+      console.warn("Impossible de verifier la session pour le moment.");
       if (error?.response?.status === 401 || error?.response?.status === 403) {
         return "invalid";
       }
