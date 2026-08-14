@@ -9,25 +9,55 @@
     return response?.data?.data;
   }
 
-  async function login(email, password, accountType = "") {
-    // Le mot de passe distingue deux comptes utilisant la même adresse.
-    // `accountType` sert au routage du front, mais l'API de token historique
-    // n'accepte que le couple mail/mot de passe dans les données d'identification.
-    void accountType;
+  function normalizeAccountType(type) {
+    const value = String(type || "").trim().toLowerCase();
+    if (value === "customer" || value === "particulier") return "customer";
+    if (value === "pro" || value === "professional" || value === "professionnel") return "pro";
+    return "";
+  }
 
-    // La réponse du endpoint token n'a pas toujours la même enveloppe que les
-    // autres opérations API. On conserve donc la réponse complète avant
-    // extraction pour accepter aussi bien { token }, { data: token } que les
-    // anciennes réponses imbriquées dans data/body.
+  async function requestLoginToken(email, password, type = "") {
+    const data = { mail: email, password: password };
+    const normalizedType = normalizeAccountType(type);
+    if (normalizedType) data.type = normalizedType;
+
     const response = await axios.post(API_URL, {
       request: "token",
       collection: "user",
-      data: { mail: email, password: password }
+      data
     }, {
       headers: { "Content-Type": "application/json" }
     });
 
     return extractToken(response?.data);
+  }
+
+  async function login(email, password, accountType = "") {
+    const normalizedType = normalizeAccountType(accountType);
+
+    // Le backend a connu deux contrats de connexion :
+    // - comptes récents : mail + mot de passe + type ;
+    // - comptes historiques : mail + mot de passe uniquement.
+    // On essaie donc le contrat typé en priorité, puis le contrat legacy.
+    if (normalizedType) {
+      try {
+        const typedToken = await requestLoginToken(email, password, normalizedType);
+        if (typedToken) return typedToken;
+      } catch (error) {
+        // Un refus d'authentification sur le contrat typé ne doit pas empêcher
+        // le fallback legacy. Les autres erreurs seront réémises seulement si
+        // le fallback échoue également.
+        try {
+          const legacyToken = await requestLoginToken(email, password);
+          if (legacyToken) return legacyToken;
+        } catch (legacyError) {
+          throw legacyError?.response ? legacyError : error;
+        }
+        return null;
+      }
+    }
+
+    return requestLoginToken(email, password);
   }
 
   function extractToken(payload) {
@@ -62,13 +92,6 @@
     );
   }
 
-  function normalizeAccountType(type) {
-    const value = String(type || "").trim().toLowerCase();
-    if (value === "customer" || value === "particulier") return "customer";
-    if (value === "pro" || value === "professional" || value === "professionnel") return "pro";
-    return "";
-  }
-
   function getStoredAccountType() {
     try {
       return normalizeAccountType(global?.localStorage?.getItem("accountType"));
@@ -91,8 +114,6 @@
       : (users.length === 1 ? users : []);
     if (!candidates.length) return null;
 
-    // Le type choisi sur l'écran de connexion est mémorisé en localStorage.
-    // Il sert à départager deux comptes utilisant la même adresse e-mail.
     const expectedType = normalizeAccountType(preferredType) || getStoredAccountType();
     if (expectedType) {
       const exactMatches = candidates.filter(
@@ -100,7 +121,6 @@
       );
       if (exactMatches.length === 1) return expectedType;
 
-      // Les anciens comptes professionnels ne possèdent pas toujours de champ `type`.
       if (expectedType === "pro") {
         const legacyMatches = candidates.filter(
           (candidate) => !String(candidate.type || "").trim()
@@ -115,7 +135,6 @@
     const type = normalizeAccountType(candidates[0].type);
     if (type) return type;
 
-    // Les comptes historiques ont été créés avant l'ajout du champ `type`.
     return "pro";
   }
 
