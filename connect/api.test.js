@@ -2,10 +2,14 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const vm = require("node:vm");
 
-function createClient(apiPayloads) {
+function createClient(apiPayloads, storedAccountType = "") {
   const payloads = [...apiPayloads];
   const requests = [];
-  const window = {};
+  const window = {
+    localStorage: {
+      getItem: (key) => key === "accountType" ? storedAccountType : null
+    }
+  };
   const axios = {
     post: async (_url, body) => {
       requests.push(body);
@@ -66,11 +70,45 @@ function createClient(apiPayloads) {
     await createClient([[{ mail: "legacy@example.fr" }]]).client.getUserAccountType("token", "legacy@example.fr"),
     "pro"
   );
+
+  const duplicateAccounts = [
+    { mail: "same@example.fr", type: "pro" },
+    { mail: "same@example.fr", type: "customer" }
+  ];
+
   assert.equal(
-    await createClient([[
-      { mail: "same@example.fr", type: "pro" },
-      { mail: "same@example.fr", type: "customer" }
-    ]]).client.getUserAccountType("token", "same@example.fr"),
+    await createClient([duplicateAccounts]).client.getUserAccountType("token", "same@example.fr"),
+    null
+  );
+  assert.equal(
+    await createClient([duplicateAccounts], "pro").client.getUserAccountType("token", "same@example.fr"),
+    "pro"
+  );
+  assert.equal(
+    await createClient([duplicateAccounts], "customer").client.getUserAccountType("token", "same@example.fr"),
+    "customer"
+  );
+  assert.equal(
+    await createClient([duplicateAccounts]).client.getUserAccountType("token", "same@example.fr", "particulier"),
+    "customer"
+  );
+
+  const legacyProAndCustomer = [
+    { mail: "legacy-same@example.fr" },
+    { mail: "legacy-same@example.fr", type: "customer" }
+  ];
+  assert.equal(
+    await createClient([legacyProAndCustomer], "pro").client.getUserAccountType("token", "legacy-same@example.fr"),
+    "pro"
+  );
+  assert.equal(
+    await createClient([legacyProAndCustomer], "customer").client.getUserAccountType("token", "legacy-same@example.fr"),
+    "customer"
+  );
+
+  const wrongSelectedType = [{ mail: "pro-only@example.fr", type: "pro" }];
+  assert.equal(
+    await createClient([wrongSelectedType], "customer").client.getUserAccountType("token", "pro-only@example.fr"),
     null
   );
 
