@@ -12,15 +12,22 @@
   async function login(email, password, accountType = "") {
     // Le mot de passe distingue deux comptes utilisant la même adresse.
     // `accountType` sert au routage du front, mais l'API de token historique
-    // n'accepte que le couple mail/mot de passe.
+    // n'accepte que le couple mail/mot de passe dans les données d'identification.
     void accountType;
-    const payload = await post({
+
+    // La réponse du endpoint token n'a pas toujours la même enveloppe que les
+    // autres opérations API. On conserve donc la réponse complète avant
+    // extraction pour accepter aussi bien { token }, { data: token } que les
+    // anciennes réponses imbriquées dans data/body.
+    const response = await axios.post(API_URL, {
       request: "token",
       collection: "user",
       data: { mail: email, password: password }
+    }, {
+      headers: { "Content-Type": "application/json" }
     });
 
-    return extractToken(payload);
+    return extractToken(response?.data);
   }
 
   function extractToken(payload) {
