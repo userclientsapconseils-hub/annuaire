@@ -23,11 +23,35 @@ function createClient(apiPayloads) {
 
   const professionalLogin = createClient(["token-pro"]);
   assert.equal(await professionalLogin.client.login("same@example.fr", "pro-password", "pro"), "token-pro");
-  assert.equal(professionalLogin.requests[0].data.type, "pro");
+  assert.equal(professionalLogin.requests[0].data.mail, "same@example.fr");
+  assert.equal(professionalLogin.requests[0].data.password, "pro-password");
+  assert.equal("type" in professionalLogin.requests[0].data, false);
 
   const customerLogin = createClient(["token-customer"]);
   assert.equal(await customerLogin.client.login("same@example.fr", "customer-password", "customer"), "token-customer");
-  assert.equal(customerLogin.requests[0].data.type, "customer");
+  assert.equal(customerLogin.requests[0].data.mail, "same@example.fr");
+  assert.equal(customerLogin.requests[0].data.password, "customer-password");
+  assert.equal("type" in customerLogin.requests[0].data, false);
+
+  const professionalRegistration = createClient([{ inserted: true }]);
+  await professionalRegistration.client.registerUser("nouveau-pro@example.fr", "secret-pro", "pro");
+  assert.equal(professionalRegistration.requests[0].request, "insert");
+  assert.equal(professionalRegistration.requests[0].collection, "user");
+  assert.equal(professionalRegistration.requests[0].data.mail, "nouveau-pro@example.fr");
+  assert.equal(professionalRegistration.requests[0].data.password, "secret-pro");
+  assert.equal(professionalRegistration.requests[0].data.type, "pro");
+
+  const customerRegistration = createClient([{ inserted: true }]);
+  await customerRegistration.client.registerUser("nouveau-client@example.fr", "secret-client", "customer");
+  assert.equal(customerRegistration.requests[0].request, "insert");
+  assert.equal(customerRegistration.requests[0].collection, "user");
+  assert.equal(customerRegistration.requests[0].data.mail, "nouveau-client@example.fr");
+  assert.equal(customerRegistration.requests[0].data.password, "secret-client");
+  assert.equal(customerRegistration.requests[0].data.type, "customer");
+
+  const particulierAliasRegistration = createClient([{ inserted: true }]);
+  await particulierAliasRegistration.client.registerUser("alias-client@example.fr", "secret-client", "particulier");
+  assert.equal(particulierAliasRegistration.requests[0].data.type, "customer");
 
   assert.equal(
     await createClient([[{ mail: "CLIENT@EXAMPLE.FR", type: "particulier" }]]).client
