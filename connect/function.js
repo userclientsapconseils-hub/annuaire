@@ -18,7 +18,7 @@ function getStoredSession() {
     if (!session?.token || !session?.email) return null;
     return session;
   } catch (error) {
-    console.error("Session invalide dans le stockage local :", error);
+    console.warn("Session invalide dans le stockage local.");
     return null;
   }
 }
@@ -74,8 +74,10 @@ async function checkGuest(guest) {
   try {
     const token = await ApiClient.login(guest.mail, guest.password, guest.accountType);
     if (!token) throw "id";
+    const verifiedAccountType = await ApiClient.getUserAccountType(token, guest.mail, guest.accountType);
+    if (verifiedAccountType !== guest.accountType) throw "id";
     guest.token = token;
-    persistSession(token, guest.mail, guest.accountType);
+    persistSession(token, guest.mail, verifiedAccountType);
     guest.message.textContent = "Connexion réussie";
     guest.message.className = "status show success";
     cookieWrite(token);

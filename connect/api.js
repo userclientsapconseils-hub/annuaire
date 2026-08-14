@@ -2,11 +2,27 @@
   const API_URL = "https://de3qg7ntqblkinxmxfhqoisuhi0pckix.lambda-url.eu-west-3.on.aws/";
 
   async function post(body) {
-    const response = await axios.post(API_URL, body, {
-      headers: { "Content-Type": "application/json" }
-    });
+    const response = await apiPost(body);
 
     return response?.data?.data;
+  }
+
+  async function apiPost(body) {
+    try {
+      return await axios.post(API_URL, body, {
+        headers: { "Content-Type": "application/json" }
+      });
+    } catch (error) {
+      throw sanitizeApiError(error);
+    }
+  }
+
+  function sanitizeApiError(error) {
+    const safeError = new Error("api request failed");
+    if (error?.response?.status) {
+      safeError.response = { status: error.response.status };
+    }
+    return safeError;
   }
 
   function normalizeAccountType(type) {
@@ -16,17 +32,44 @@
     return "";
   }
 
+  function installSafeConsoleLogging() {
+    const consoleRef = global?.console || (typeof console !== "undefined" ? console : null);
+    if (!consoleRef || consoleRef.__authSafeLoggingInstalled) return;
+
+    const sanitizeArgs = (args) => args.map((arg, index) => {
+      if (index === 0 && typeof arg === "string") return arg;
+      if (arg instanceof Error) return "[erreur masquee]";
+      if (arg && typeof arg === "object") return "[donnees masquees]";
+      return arg;
+    });
+
+    ["error", "warn", "log"].forEach((level) => {
+      const original = consoleRef[level]?.bind(consoleRef);
+      if (!original) return;
+      consoleRef[level] = (...args) => original(...sanitizeArgs(args));
+    });
+
+    consoleRef.__authSafeLoggingInstalled = true;
+  }
+
+  function normalizeTokenString(value) {
+    const token = String(value || "").trim();
+    const rejectedValues = new Set(["false", "null", "undefined", "not connected", "not found", "unauthorized"]);
+    if (token.length < 8) return null;
+    if (/\s/.test(token)) return null;
+    if (rejectedValues.has(token.toLowerCase())) return null;
+    return token;
+  }
+
   async function requestLoginToken(email, password, type = "") {
     const data = { mail: email, password: password };
     const normalizedType = normalizeAccountType(type);
     if (normalizedType) data.type = normalizedType;
 
-    const response = await axios.post(API_URL, {
+    const response = await apiPost({
       request: "token",
       collection: "user",
       data
-    }, {
-      headers: { "Content-Type": "application/json" }
     });
 
     return extractToken(response?.data);
@@ -66,11 +109,18 @@
       try {
         return extractToken(JSON.parse(payload));
       } catch {
-        return payload.trim() || null;
+        return normalizeTokenString(payload);
       }
     }
+    if (Array.isArray(payload)) {
+      for (const item of payload) {
+        const token = extractToken(item);
+        if (token) return token;
+      }
+      return null;
+    }
     if (typeof payload !== "object") return null;
-    if (typeof payload.token === "string") return payload.token;
+    if (typeof payload.token === "string") return normalizeTokenString(payload.token);
     return extractToken(payload.data) || extractToken(payload.body);
   }
 
@@ -155,7 +205,7 @@
       );
       return matchingUser ? "valid" : "invalid";
     } catch (error) {
-      console.error("Impossible de vérifier la session pour le moment :", error);
+      console.warn("Impossible de verifier la session pour le moment.");
       if (error?.response?.status === 401 || error?.response?.status === 403) {
         return "invalid";
       }
@@ -258,4 +308,6 @@
     findCustomerQuoteRequests,
     updateQuoteRequestStatus
   };
+
+  installSafeConsoleLogging();
 })(window);

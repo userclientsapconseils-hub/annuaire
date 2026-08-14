@@ -21,17 +21,26 @@
 
     if (!payload) return null;
 
+    function normalizeTokenString(value) {
+      const token = String(value || "").trim();
+      const rejectedValues = new Set(["false", "null", "undefined", "not connected", "not found", "unauthorized"]);
+      if (token.length < 8) return null;
+      if (/\s/.test(token)) return null;
+      if (rejectedValues.has(token.toLowerCase())) return null;
+      return token;
+    }
+
     if (typeof payload === "string") {
       try {
         const parsed = JSON.parse(payload);
-        return parsed?.token || null;
+        return normalizeTokenString(parsed?.token);
       } catch {
-        return payload;
+        return normalizeTokenString(payload);
       }
     }
 
     if (typeof payload === "object") {
-      return payload?.token || null;
+      return normalizeTokenString(payload?.token);
     }
 
     return null;
@@ -66,7 +75,7 @@
 
       return "unknown";
     } catch (error) {
-      console.error("Impossible de vérifier la session pour le moment :", error);
+      console.warn("Impossible de verifier la session pour le moment.");
       if (error?.response?.status === 401 || error?.response?.status === 403) {
         return "invalid";
       }

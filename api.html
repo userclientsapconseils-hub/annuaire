@@ -14,22 +14,38 @@
 <script>
   async function request(){
     let url = 'https://de3qg7ntqblkinxmxfhqoisuhi0pckix.lambda-url.eu-west-3.on.aws/' //mongoProd
+    const mail = document.getElementById('apiMail').value.trim()
+    const password = document.getElementById('apiPassword').value
+    const result = document.getElementById('resultat')
+
+    if (!mail || !password) {
+      result.textContent = 'Renseignez un mail et un mot de passe pour tester la connexion.'
+      return
+    }
+
     let body = {
       request:'token',
       collection:'user',
-      //token:'173492289355',
       data:{
-        mail:'test@yopmail.com',
-        password:'coucou',
+        mail,
+        password,
       }
     }
-    let response = await axios({method:'post', url:url, headers:{}, data:body}).then(response => {return response})
-    console.log(response.data)
-    document.getElementById('resultat').innerHTML = JSON.stringify(response.data)
+    try {
+      let response = await axios({method:'post', url:url, headers:{}, data:body}).then(response => {return response})
+      const token = response?.data?.data
+      result.textContent = token ? 'Connexion API réussie.' : 'Connexion API refusée.'
+    } catch {
+      result.textContent = 'Connexion API indisponible.'
+    }
   }
 </script>
 
 <div id='api'>
+  <label for='apiMail'>Adresse mail</label><br/>
+  <input id='apiMail' type='email' autocomplete='off'><br/><br/>
+  <label for='apiPassword'>Mot de passe</label><br/>
+  <input id='apiPassword' type='password' autocomplete='off'><br/><br/>
   <div style=" margin:20px; width:200px; text-align:center; background:blue; color:white; cursor:pointer" onClick='request()'>
     Lancer
   </div><br/>
