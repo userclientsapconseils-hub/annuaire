@@ -38,6 +38,9 @@ function httpError(status) {
   assert.equal(await createClient([wrappedData('{"token":"token-json"}')]).client.login("pro@example.fr", "secret"), "token-json");
   assert.equal(await createClient([wrappedData({ data: { token: "token-nested" } })]).client.login("pro@example.fr", "secret"), "token-nested");
   assert.equal(await createClient([{ data: { body: { token: "token-body" } } }]).client.login("pro@example.fr", "secret"), "token-body");
+  assert.equal(await createClient([wrappedData([{ token: "token-array" }])]).client.login("pro@example.fr", "secret"), "token-array");
+  assert.equal(await createClient([wrappedData("not connected")]).client.login("pro@example.fr", "secret"), null);
+  assert.equal(await createClient([wrappedData("false")]).client.login("pro@example.fr", "secret"), null);
 
   const professionalLogin = createClient([wrappedData("token-pro")]);
   assert.equal(await professionalLogin.client.login("same@example.fr", "pro-password", "pro"), "token-pro");
