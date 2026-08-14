@@ -13,7 +13,9 @@ function createClient(apiResponses, storedAccountType = "") {
   const axios = {
     post: async (_url, body) => {
       requests.push(body);
-      return responses.shift();
+      const response = responses.shift();
+      if (response instanceof Error) throw response;
+      return response;
     }
   };
   vm.runInNewContext(fs.readFileSync(`${__dirname}/api.js`, "utf8"), { window, axios, console });
@@ -22,6 +24,12 @@ function createClient(apiResponses, storedAccountType = "") {
 
 function wrappedData(payload) {
   return { data: { data: payload } };
+}
+
+function httpError(status) {
+  const error = new Error(`HTTP ${status}`);
+  error.response = { status };
+  return error;
 }
 
 (async () => {
@@ -33,17 +41,47 @@ function wrappedData(payload) {
 
   const professionalLogin = createClient([wrappedData("token-pro")]);
   assert.equal(await professionalLogin.client.login("same@example.fr", "pro-password", "pro"), "token-pro");
+  assert.equal(professionalLogin.requests.length, 1);
   assert.equal(professionalLogin.requests[0].request, "token");
   assert.equal(professionalLogin.requests[0].collection, "user");
   assert.equal(professionalLogin.requests[0].data.mail, "same@example.fr");
   assert.equal(professionalLogin.requests[0].data.password, "pro-password");
-  assert.equal("type" in professionalLogin.requests[0].data, false);
+  assert.equal(professionalLogin.requests[0].data.type, "pro");
 
   const customerLogin = createClient([wrappedData("token-customer")]);
   assert.equal(await customerLogin.client.login("same@example.fr", "customer-password", "customer"), "token-customer");
-  assert.equal(customerLogin.requests[0].data.mail, "same@example.fr");
-  assert.equal(customerLogin.requests[0].data.password, "customer-password");
-  assert.equal("type" in customerLogin.requests[0].data, false);
+  assert.equal(customerLogin.requests.length, 1);
+  assert.equal(customerLogin.requests[0].data.type, "customer");
+
+  const particulierAliasLogin = createClient([wrappedData("token-particulier")]);
+  assert.equal(await particulierAliasLogin.client.login("client@example.fr", "secret", "particulier"), "token-particulier");
+  assert.equal(particulierAliasLogin.requests[0].data.type, "customer");
+
+  const legacyFallbackAfterEmpty = createClient([
+    wrappedData(null),
+    wrappedData("legacy-token")
+  ]);
+  assert.equal(await legacyFallbackAfterEmpty.client.login("legacy@example.fr", "legacy-password", "pro"), "legacy-token");
+  assert.equal(legacyFallbackAfterEmpty.requests.length, 2);
+  assert.equal(legacyFallbackAfterEmpty.requests[0].data.type, "pro");
+  assert.equal("type" in legacyFallbackAfterEmpty.requests[1].data, false);
+
+  const legacyFallbackAfter401 = createClient([
+    httpError(401),
+    wrappedData("legacy-token-after-401")
+  ]);
+  assert.equal(await legacyFallbackAfter401.client.login("legacy@example.fr", "legacy-password", "pro"), "legacy-token-after-401");
+  assert.equal(legacyFallbackAfter401.requests.length, 2);
+  assert.equal(legacyFallbackAfter401.requests[0].data.type, "pro");
+  assert.equal("type" in legacyFallbackAfter401.requests[1].data, false);
+
+  const customerLegacyFallback = createClient([
+    wrappedData(null),
+    wrappedData("customer-legacy-token")
+  ]);
+  assert.equal(await customerLegacyFallback.client.login("client@example.fr", "legacy-password", "customer"), "customer-legacy-token");
+  assert.equal(customerLegacyFallback.requests[0].data.type, "customer");
+  assert.equal("type" in customerLegacyFallback.requests[1].data, false);
 
   const professionalRegistration = createClient([wrappedData({ inserted: true })]);
   await professionalRegistration.client.registerUser("nouveau-pro@example.fr", "secret-pro", "pro");
@@ -57,8 +95,6 @@ function wrappedData(payload) {
   await customerRegistration.client.registerUser("nouveau-client@example.fr", "secret-client", "customer");
   assert.equal(customerRegistration.requests[0].request, "insert");
   assert.equal(customerRegistration.requests[0].collection, "user");
-  assert.equal(customerRegistration.requests[0].data.mail, "nouveau-client@example.fr");
-  assert.equal(customerRegistration.requests[0].data.password, "secret-client");
   assert.equal(customerRegistration.requests[0].data.type, "customer");
 
   const particulierAliasRegistration = createClient([wrappedData({ inserted: true })]);
@@ -120,7 +156,7 @@ function wrappedData(payload) {
     null
   );
 
-  console.log("Tests du client d'authentification réussis.");
+  console.log("Tests d'authentification typée et legacy réussis.");
 })().catch((error) => {
   console.error(error);
   process.exitCode = 1;
