@@ -16,6 +16,26 @@
     return "";
   }
 
+  function installSafeConsoleLogging() {
+    const consoleRef = global?.console || (typeof console !== "undefined" ? console : null);
+    if (!consoleRef || consoleRef.__authSafeLoggingInstalled) return;
+
+    const sanitizeArgs = (args) => args.map((arg, index) => {
+      if (index === 0 && typeof arg === "string") return arg;
+      if (arg instanceof Error) return "[erreur masquee]";
+      if (arg && typeof arg === "object") return "[donnees masquees]";
+      return arg;
+    });
+
+    ["error", "warn", "log"].forEach((level) => {
+      const original = consoleRef[level]?.bind(consoleRef);
+      if (!original) return;
+      consoleRef[level] = (...args) => original(...sanitizeArgs(args));
+    });
+
+    consoleRef.__authSafeLoggingInstalled = true;
+  }
+
   function normalizeTokenString(value) {
     const token = String(value || "").trim();
     const rejectedValues = new Set(["false", "null", "undefined", "not connected", "not found", "unauthorized"]);
@@ -274,4 +294,6 @@
     findCustomerQuoteRequests,
     updateQuoteRequestStatus
   };
+
+  installSafeConsoleLogging();
 })(window);
