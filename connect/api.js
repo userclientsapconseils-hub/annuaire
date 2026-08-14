@@ -55,7 +55,22 @@
     );
   }
 
-  async function getUserAccountType(token, userEmail) {
+  function normalizeAccountType(type) {
+    const value = String(type || "").trim().toLowerCase();
+    if (value === "customer" || value === "particulier") return "customer";
+    if (value === "pro" || value === "professional" || value === "professionnel") return "pro";
+    return "";
+  }
+
+  function getStoredAccountType() {
+    try {
+      return normalizeAccountType(global?.localStorage?.getItem("accountType"));
+    } catch {
+      return "";
+    }
+  }
+
+  async function getUserAccountType(token, userEmail, preferredType = "") {
     const normalizedEmail = String(userEmail || "").trim().toLowerCase();
     if (!token || !normalizedEmail) return null;
 
@@ -64,16 +79,37 @@
     const matchingUsers = users.filter(
       (candidate) => String(candidate.mail || "").trim().toLowerCase() === normalizedEmail
     );
-    const user = matchingUsers.length === 1
-      ? matchingUsers[0]
-      : (matchingUsers.length === 0 && users.length === 1 ? users[0] : null);
-    if (!user) return null;
+    const candidates = matchingUsers.length
+      ? matchingUsers
+      : (users.length === 1 ? users : []);
+    if (!candidates.length) return null;
 
-    const type = String(user.type || "").trim().toLowerCase();
-    if (type === "customer" || type === "particulier") return "customer";
-    if (type === "pro" || type === "professional" || type === "professionnel") return "pro";
+    // Le type choisi sur l'écran de connexion est mémorisé en localStorage.
+    // Il sert à départager deux comptes utilisant la même adresse e-mail.
+    const expectedType = normalizeAccountType(preferredType) || getStoredAccountType();
+    if (expectedType) {
+      const exactMatches = candidates.filter(
+        (candidate) => normalizeAccountType(candidate.type) === expectedType
+      );
+      if (exactMatches.length === 1) return expectedType;
+
+      // Les anciens comptes professionnels ne possèdent pas toujours de champ `type`.
+      if (expectedType === "pro") {
+        const legacyMatches = candidates.filter(
+          (candidate) => !String(candidate.type || "").trim()
+        );
+        if (legacyMatches.length === 1 && exactMatches.length === 0) return "pro";
+      }
+
+      return null;
+    }
+
+    if (candidates.length !== 1) return null;
+    const type = normalizeAccountType(candidates[0].type);
+    if (type) return type;
+
     // Les comptes historiques ont été créés avant l'ajout du champ `type`.
-    return type ? null : "pro";
+    return "pro";
   }
 
   async function validateUserSession(token, userEmail) {
