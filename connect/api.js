@@ -2,11 +2,27 @@
   const API_URL = "https://de3qg7ntqblkinxmxfhqoisuhi0pckix.lambda-url.eu-west-3.on.aws/";
 
   async function post(body) {
-    const response = await axios.post(API_URL, body, {
-      headers: { "Content-Type": "application/json" }
-    });
+    const response = await apiPost(body);
 
     return response?.data?.data;
+  }
+
+  async function apiPost(body) {
+    try {
+      return await axios.post(API_URL, body, {
+        headers: { "Content-Type": "application/json" }
+      });
+    } catch (error) {
+      throw sanitizeApiError(error);
+    }
+  }
+
+  function sanitizeApiError(error) {
+    const safeError = new Error("api request failed");
+    if (error?.response?.status) {
+      safeError.response = { status: error.response.status };
+    }
+    return safeError;
   }
 
   function normalizeAccountType(type) {
@@ -50,12 +66,10 @@
     const normalizedType = normalizeAccountType(type);
     if (normalizedType) data.type = normalizedType;
 
-    const response = await axios.post(API_URL, {
+    const response = await apiPost({
       request: "token",
       collection: "user",
       data
-    }, {
-      headers: { "Content-Type": "application/json" }
     });
 
     return extractToken(response?.data);
