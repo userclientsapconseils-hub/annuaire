@@ -432,7 +432,13 @@ textarea{
 
               <div class="form-group full">
                 <label for="registerPassword">Mot de passe</label>
-                <input id="registerPassword" name="registerPassword" type="password" placeholder="Votre mot de passe" required>
+                <input id="registerPassword" name="registerPassword" type="password" minlength="12" maxlength="128" autocomplete="new-password" aria-describedby="passwordHelp" placeholder="12 caractères minimum" required>
+                <small id="passwordHelp">Utilisez au moins 12 caractères.</small>
+              </div>
+
+              <div class="form-group full">
+                <label for="registerPasswordConfirmation">Confirmez le mot de passe</label>
+                <input id="registerPasswordConfirmation" name="registerPasswordConfirmation" type="password" minlength="12" maxlength="128" autocomplete="new-password" placeholder="Saisissez à nouveau votre mot de passe" required>
               </div>
             </div>
 
@@ -591,6 +597,7 @@ textarea{
 
 <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 <script src="../connect/api.js"></script>
+<script src="../connect/session.js"></script>
 
 <script>
 (() => {
@@ -611,6 +618,7 @@ textarea{
 
   const registerEmail = document.getElementById("registerEmail");
   const registerPassword = document.getElementById("registerPassword");
+  const registerPasswordConfirmation = document.getElementById("registerPasswordConfirmation");
   const statusBox = document.getElementById("statusBox");
   const previewBox = document.getElementById("previewBox");
   const resumeNotice = document.getElementById("resumeNotice");
@@ -801,53 +809,35 @@ textarea{
     }
   }
 
-  function extractTokenFromPayload(payload) {
-    if (!payload) return null;
-
-    if (typeof payload === "string") {
-      try {
-        const parsed = JSON.parse(payload);
-        return parsed?.token || null;
-      } catch {
-        return payload;
-      }
-    }
-
-    if (typeof payload === "object") {
-      return payload?.token || null;
-    }
-
-    return null;
-  }
-
-  async function requestTokenForCredentials(email, password, type) {
-    return ApiClient.login(email, password, type);
-  }
-
-  async function passwordAlreadyUsedForOtherAccount(email, password) {
-    const otherAccountType = accountType === "customer" ? "pro" : "customer";
-    try {
-      return Boolean(await ApiClient.login(email, password, otherAccountType));
-    } catch (error) {
-      if (error?.response?.status === 401 || error?.response?.status === 403) return false;
-      throw error;
-    }
+  function isValidEmail(value) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
   }
 
   async function registerUser() {
     hideStatus();
     previewBox.classList.remove("show");
 
-    const email = registerEmail.value.trim();
-    const password = registerPassword.value.trim();
+    const email = registerEmail.value.trim().toLowerCase();
+    const password = registerPassword.value;
+    const passwordConfirmation = registerPasswordConfirmation.value;
 
-    if (!email) {
-      showStatus("Veuillez renseigner votre adresse mail.", "error");
+    if (!isValidEmail(email)) {
+      showStatus("Veuillez saisir une adresse mail valide.", "error");
       return;
     }
 
-    if (!password) {
-      showStatus("Veuillez renseigner votre mot de passe.", "error");
+    if (password.length < 12 || password.length > 128) {
+      showStatus("Le mot de passe doit contenir entre 12 et 128 caractères.", "error");
+      return;
+    }
+
+    if (password !== passwordConfirmation) {
+      showStatus("Les deux mots de passe ne correspondent pas.", "error");
+      return;
+    }
+
+    if (!AuthSession.normalizeAccountType(accountType)) {
+      showStatus("Veuillez choisir un type de compte.", "error");
       return;
     }
 
@@ -856,27 +846,21 @@ textarea{
       registerBtn.textContent = "Création en cours...";
       showStatus("Création de votre compte...", "info");
 
-      if (await passwordAlreadyUsedForOtherAccount(email, password)) {
-        showStatus("Cette adresse et ce mot de passe sont déjà utilisés pour l’autre type de compte. Choisissez un mot de passe différent.", "error");
-        return;
-      }
-
-      const insertionPayload = await ApiClient.registerUser(email, password, accountType);
-
-      console.log("Réponse API inscription :", insertionPayload);
-
-      const insertionToken = extractTokenFromPayload(insertionPayload);
-      const token = insertionToken || await requestTokenForCredentials(email, password, accountType);
+      await ApiClient.registerUser(email, password, accountType);
+      const token = await ApiClient.login(email, password, accountType);
 
       if (!token) {
         showStatus("Le compte semble créé, mais la connexion automatique a échoué. Vérifiez vos identifiants sur la page Connexion.", "error");
         return;
       }
 
-      localStorage.setItem("token", token);
-      localStorage.setItem("userEmail", email);
-      localStorage.setItem("accountType", accountType);
-      localStorage.setItem("authSession", JSON.stringify({ token, email, accountType, createdAt: Date.now(), expiresAt: Date.now() + 30 * 24 * 60 * 60 * 1000 }));
+      const verifiedAccountType = await ApiClient.getUserAccountType(token, email);
+      if (verifiedAccountType !== accountType) {
+        AuthSession.clear();
+        showStatus("Le compte a été créé, mais son type n’a pas pu être vérifié. Veuillez contacter le support.", "error");
+        return;
+      }
+      AuthSession.persist(token, email, verifiedAccountType);
 
       if (accountType === "customer") {
         window.location.href = "../espaceParticulier/index.html";
@@ -889,15 +873,14 @@ textarea{
       go(3);
 
     } catch (error) {
-      console.error("Erreur API inscription :", error);
-
-      if (error.response && error.response.data) {
-        const apiError = typeof error.response.data === "string"
-          ? error.response.data
-          : JSON.stringify(error.response.data);
-        showStatus("Erreur API : " + apiError, "error");
+      console.error("Erreur API inscription.");
+      const status = Number(error?.response?.status);
+      if (status === 409) {
+        showStatus("Un compte existe déjà avec cette adresse e-mail.", "error");
+      } else if ([400, 422].includes(status)) {
+        showStatus("Les informations saisies ne sont pas valides.", "error");
       } else {
-        showStatus("Erreur : " + error.message, "error");
+        showStatus("Une erreur est survenue. Veuillez réessayer.", "error");
       }
     } finally {
       registerBtn.disabled = false;
@@ -937,16 +920,17 @@ textarea{
     hideStatus();
     previewBox.classList.remove("show");
 
-    const token = localStorage.getItem("token");
-    if (!token) {
-      showStatus("Token introuvable. Créez d'abord un compte avant de publier une annonce.", "error");
+    const session = AuthSession.get();
+    if (!session) {
+      showStatus("Votre session a expiré. Veuillez vous reconnecter.", "error");
       go(2);
       return;
     }
 
-    const userEmail = localStorage.getItem("userEmail") || "";
-    if (!userEmail) {
-      showStatus("Adresse mail introuvable. Reconnectez-vous avant de publier une annonce.", "error");
+    const token = session.token;
+    const userEmail = session.email;
+    if (session.accountType !== "pro") {
+      showStatus("Cette fonctionnalité est réservée aux comptes professionnels.", "error");
       go(2);
       return;
     }
@@ -961,6 +945,14 @@ textarea{
     try {
       submitAdBtn.disabled = true;
       submitAdBtn.textContent = "Enregistrement...";
+      showStatus("Vérification de votre session...", "info");
+
+      const verifiedAccountType = await ApiClient.getUserAccountType(token, userEmail);
+      if (verifiedAccountType !== "pro") {
+        AuthSession.clear();
+        throw new Error("professional session required");
+      }
+
       showStatus("Vérification de votre annonce existante dans l'API...", "info");
 
       const savedAd = await findExistingAdForCurrentUser(token, userEmail);
@@ -994,16 +986,8 @@ textarea{
         "success"
       );
     } catch (error) {
-      console.error("Erreur API annonce :", error);
-
-      if (error.response && error.response.data) {
-        const apiError = typeof error.response.data === "string"
-          ? error.response.data
-          : JSON.stringify(error.response.data);
-        showStatus("Erreur API : " + apiError, "error");
-      } else {
-        showStatus("Erreur : " + error.message, "error");
-      }
+      console.error("Erreur API annonce.");
+      showStatus("L’annonce n’a pas pu être enregistrée. Veuillez réessayer.", "error");
     } finally {
       submitAdBtn.disabled = false;
       setSubmitButtonLabel();
@@ -1138,7 +1122,9 @@ textarea{
     if (!token) return;
 
     try {
-      const candidates = normalizeApiCandidates(await ApiClient.findOfferByMail(token, localStorage.getItem("userEmail") || ""));
+      const session = AuthSession.get();
+      if (!session || session.token !== token || session.accountType !== "pro") return;
+      const candidates = normalizeApiCandidates(await ApiClient.findOfferByMail(token, session.email));
       if (!candidates.length) return;
 
       const savedCandidate = candidates.find((candidate) => getApiRecordId(candidate)) || candidates[0];
@@ -1195,10 +1181,11 @@ textarea{
     hideStatus();
     previewBox.classList.remove("show");
 
-    const token = localStorage.getItem("token");
-    const userEmail = localStorage.getItem("userEmail") || "";
+    const session = AuthSession.get();
+    const token = session?.token || "";
+    const userEmail = session?.email || "";
 
-    if (!token || !userEmail) {
+    if (!token || !userEmail || session.accountType !== "pro") {
       showStatus("Reconnectez-vous avant de consulter votre annonce enregistrée.", "error");
       go(3);
       return;
@@ -1261,8 +1248,9 @@ textarea{
     });
   }
 
-  const savedEmail = localStorage.getItem("userEmail");
-  const savedToken = localStorage.getItem("token");
+  const savedSession = AuthSession.get();
+  const savedEmail = savedSession?.email || "";
+  const savedToken = savedSession?.token || "";
   const urlParams = new URLSearchParams(window.location.search);
   const fromDashboard = urlParams.get("fromDashboard") === "1";
   const shouldResume = urlParams.get("resume") === "1";
@@ -1277,9 +1265,9 @@ textarea{
     resumeNotice.style.display = "block";
   }
 
-  if (savedToken && savedEmail) {
+  if (savedToken && savedEmail && savedSession.accountType === "pro") {
     if (foundDraft || shouldResume || fromDashboard) {
-      accountType = localStorage.getItem("accountType") || "pro";
+      accountType = "pro";
       go(3);
       showStatus("Vous êtes connecté. Vous pouvez reprendre votre annonce.", "info");
     }

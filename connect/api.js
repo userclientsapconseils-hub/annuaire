@@ -25,6 +25,10 @@
     return safeError;
   }
 
+  function isAuthenticationRejection(error) {
+    return [301, 401, 403, 404].includes(Number(error?.response?.status));
+  }
+
   function normalizeAccountType(type) {
     const value = String(type || "").trim().toLowerCase();
     if (value === "customer" || value === "particulier") return "customer";
@@ -32,27 +36,10 @@
     return "";
   }
 
-  function installSafeConsoleLogging() {
-    const consoleRef = global?.console || (typeof console !== "undefined" ? console : null);
-    if (!consoleRef || consoleRef.__authSafeLoggingInstalled) return;
-
-    const sanitizeArgs = (args) => args.map((arg, index) => {
-      if (index === 0 && typeof arg === "string") return arg;
-      if (arg instanceof Error) return "[erreur masquee]";
-      if (arg && typeof arg === "object") return "[donnees masquees]";
-      return arg;
-    });
-
-    ["error", "warn", "log"].forEach((level) => {
-      const original = consoleRef[level]?.bind(consoleRef);
-      if (!original) return;
-      consoleRef[level] = (...args) => original(...sanitizeArgs(args));
-    });
-
-    consoleRef.__authSafeLoggingInstalled = true;
-  }
-
   function normalizeTokenString(value) {
+    if (typeof value === "number" && (!Number.isSafeInteger(value) || value <= 0)) {
+      return null;
+    }
     const token = String(value || "").trim();
     const rejectedValues = new Set(["false", "null", "undefined", "not connected", "not found", "unauthorized"]);
     if (token.length < 8) return null;
@@ -66,45 +53,51 @@
     const normalizedType = normalizeAccountType(type);
     if (normalizedType) data.type = normalizedType;
 
-    const response = await apiPost({
-      request: "token",
-      collection: "user",
-      data
-    });
+    try {
+      const response = await apiPost({
+        request: "token",
+        collection: "user",
+        data
+      });
 
-    return extractToken(response?.data);
+      return extractToken(response?.data);
+    } catch (error) {
+      // Cette Lambda utilise historiquement 301 pour « aucun résultat ».
+      // Sans ce traitement, de mauvais identifiants sont affichés comme une
+      // panne serveur et le fallback des comptes historiques ne fonctionne pas.
+      if (isAuthenticationRejection(error)) return null;
+      throw error;
+    }
   }
 
   async function login(email, password, accountType = "") {
     const normalizedType = normalizeAccountType(accountType);
+    const normalizedEmail = String(email || "").trim();
+    if (!normalizedEmail || !password) return null;
 
     // Le backend a connu deux contrats de connexion :
     // - comptes récents : mail + mot de passe + type ;
     // - comptes historiques : mail + mot de passe uniquement.
     // On essaie donc le contrat typé en priorité, puis le contrat legacy.
     if (normalizedType) {
-      try {
-        const typedToken = await requestLoginToken(email, password, normalizedType);
-        if (typedToken) return typedToken;
-      } catch (error) {
-        // Un refus d'authentification sur le contrat typé ne doit pas empêcher
-        // le fallback legacy. Les autres erreurs seront réémises seulement si
-        // le fallback échoue également.
-        try {
-          const legacyToken = await requestLoginToken(email, password);
-          if (legacyToken) return legacyToken;
-        } catch (legacyError) {
-          throw legacyError?.response ? legacyError : error;
-        }
-        return null;
-      }
+      const typedToken = await requestLoginToken(normalizedEmail, password, normalizedType);
+      if (typedToken) return typedToken;
+
+      const legacyToken = await requestLoginToken(normalizedEmail, password);
+      if (!legacyToken) return null;
+
+      // Un fallback sans rôle n'est sûr que si l'adresse correspond à un seul
+      // rôle vérifiable. Une adresse dupliquée reste volontairement ambiguë.
+      const legacyAccountType = await getUserAccountType(legacyToken, normalizedEmail);
+      return legacyAccountType === normalizedType ? legacyToken : null;
     }
 
-    return requestLoginToken(email, password);
+    return requestLoginToken(normalizedEmail, password);
   }
 
   function extractToken(payload) {
     if (!payload) return null;
+    if (typeof payload === "number") return normalizeTokenString(payload);
     if (typeof payload === "string") {
       try {
         return extractToken(JSON.parse(payload));
@@ -120,7 +113,9 @@
       return null;
     }
     if (typeof payload !== "object") return null;
-    if (typeof payload.token === "string") return normalizeTokenString(payload.token);
+    if (typeof payload.token === "string" || typeof payload.token === "number") {
+      return normalizeTokenString(payload.token);
+    }
     return extractToken(payload.data) || extractToken(payload.body);
   }
 
@@ -142,15 +137,7 @@
     );
   }
 
-  function getStoredAccountType() {
-    try {
-      return normalizeAccountType(global?.localStorage?.getItem("accountType"));
-    } catch {
-      return "";
-    }
-  }
-
-  async function getUserAccountType(token, userEmail, preferredType = "") {
+  async function getUserAccountType(token, userEmail) {
     const normalizedEmail = String(userEmail || "").trim().toLowerCase();
     if (!token || !normalizedEmail) return null;
 
@@ -164,23 +151,8 @@
       : (users.length === 1 ? users : []);
     if (!candidates.length) return null;
 
-    const expectedType = normalizeAccountType(preferredType) || getStoredAccountType();
-    if (expectedType) {
-      const exactMatches = candidates.filter(
-        (candidate) => normalizeAccountType(candidate.type) === expectedType
-      );
-      if (exactMatches.length === 1) return expectedType;
-
-      if (expectedType === "pro") {
-        const legacyMatches = candidates.filter(
-          (candidate) => !String(candidate.type || "").trim()
-        );
-        if (legacyMatches.length === 1 && exactMatches.length === 0) return "pro";
-      }
-
-      return null;
-    }
-
+    // Une adresse correspondant à plusieurs comptes est ambiguë. Le navigateur
+    // ne doit jamais choisir lui-même le rôle à utiliser.
     if (candidates.length !== 1) return null;
     const type = normalizeAccountType(candidates[0].type);
     if (type) return type;
@@ -218,13 +190,17 @@
   }
 
   async function registerUser(email, password, type = "pro") {
-    const apiType = type === "particulier" ? "customer" : type;
+    const apiType = normalizeAccountType(type);
+    const normalizedEmail = String(email || "").trim().toLowerCase();
+    if (!apiType || !normalizedEmail || !password) {
+      throw new Error("invalid registration data");
+    }
 
     return post({
       request: "insert",
       collection: "user",
       data: {
-        mail: email,
+        mail: normalizedEmail,
         password: password,
         type: apiType
       }
@@ -232,6 +208,7 @@
   }
 
   async function saveOffer(token, data, isUpdate) {
+    if (!token) throw new Error("authentication required");
     return post({
       request: isUpdate ? "update" : "insert",
       collection: "publicOffer",
@@ -255,6 +232,7 @@
   }
 
   async function findOfferByMail(token, mail) {
+    if (!token) throw new Error("authentication required");
     return post({
       request: "find",
       collection: "publicOffer",
@@ -263,11 +241,13 @@
     });
   }
 
-  async function createQuoteRequest(data) {
-    return post({ request: "insert", collection: "quoterequest", data });
+  async function createQuoteRequest(token, data) {
+    if (!token) throw new Error("authentication required");
+    return post({ request: "insert", collection: "quoterequest", token, data });
   }
 
   async function findQuoteRequests(token, professionalMail) {
+    if (!token) throw new Error("authentication required");
     return post({
       request: "find",
       collection: "quoterequest",
@@ -277,6 +257,7 @@
   }
 
   async function findCustomerQuoteRequests(token, customerEmail) {
+    if (!token) throw new Error("authentication required");
     return post({
       request: "find",
       collection: "quoterequest",
@@ -286,6 +267,7 @@
   }
 
   async function updateQuoteRequestStatus(token, quoteRequest, status) {
+    if (!token) throw new Error("authentication required");
     return post({
       request: "update",
       collection: "quoterequest",
@@ -309,5 +291,4 @@
     updateQuoteRequestStatus
   };
 
-  installSafeConsoleLogging();
 })(window);

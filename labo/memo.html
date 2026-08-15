@@ -3,87 +3,15 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Laboratoire API</title>
+  <title>Outil retiré</title>
   <link rel="stylesheet" href="../home/navigation.css">
-  <style>body{margin:0;font-family:Arial,sans-serif}.tool-content{padding:24px}</style>
+  <style>body{margin:0;font-family:Arial,sans-serif}.message{max-width:720px;margin:64px auto;padding:24px}</style>
 </head>
 <body>
   <div data-site-header></div>
-  <main class="tool-content">
-<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-<script>
-  async function token(){
-    let url = 'https://de3qg7ntqblkinxmxfhqoisuhi0pckix.lambda-url.eu-west-3.on.aws/' //mongoProd
-    let body = {
-      request:'token',
-      collection:'user',
-      data:{
-        mail:document.getElementById('mail').value,
-        password:document.getElementById('password').value,
-      }
-    }
-    try {
-      let response = await axios({method:'post', url:url, headers:{}, data:body}).then(response => {return response})
-      document.getElementById('token').value = response?.data?.data || ''
-    } catch {
-      document.getElementById('token').value = ''
-    }
-  }
-</script>
-
-
-<script>
-  async function request(){
-    let url = 'https://de3qg7ntqblkinxmxfhqoisuhi0pckix.lambda-url.eu-west-3.on.aws/' //mongoProd
-    let body = {
-      request:document.getElementById('request').value,
-      collection:document.getElementById('collection').value,
-      token:document.getElementById('token').value,
-      data:JSON.parse(document.getElementById('filter').value)
-    }
-    try {
-      let response = await axios({method:'post', url:url, headers:{}, data:body}).then(response => {return response})
-      document.getElementById('resultat').textContent = response?.data ? 'Requête API terminée.' : 'Aucune réponse API.'
-    } catch {
-      document.getElementById('resultat').textContent = 'Requête API indisponible.'
-    }
-  }
-</script>
-
-
-
-<div id='api'>
-  <strong>Identification</strong>
-  <div>
-    Mail<input id='mail'/>
-    Password<input id='password' type='password'/>
-    <input type='submit' onClick='token()'> Connexion </input>
-    => Token <input disabled id='token'></input>
-  </div><br/><br/>
-
-  <strong>Request</strong>
-  Request type
-  <select id='request'>
-    <option value='find'>find</option>
-    <option value='insert'>insert</option>
-    <option value='update'>update</option>
-    <option value='remove'>remove</option>
-  </select>
-  Collection
-  <select id='collection'>
-    <option value='publicOffer'>publicOffer</option>
-    <option value='publicAsk'>publicAsk</option>
-    <option value='privateQuote'>privateQuote</option>
-    <option value='user'>user</option>
-  </select>
-  Filter
-  <input value='{}' id='filter'></input>
-  <span style=" margin:20px; padding:10px; background:blue; border-radius:'5px'; cursor:pointer; font-weight:bold; text-align:center; color:white;" onClick='request()'>
-    Launch
-  </span><br/>
-  => Résultat <div id='resultat'></div>
-</div>
-
+  <main class="message">
+    <h1>Laboratoire API retiré</h1>
+    <p>Les opérations techniques sur l’API ne sont plus exposées dans l’interface publique.</p>
   </main>
   <script src="../home/navigation.js"></script>
 </body>

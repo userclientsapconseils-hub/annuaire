@@ -1,95 +1,86 @@
-const SESSION_KEY = "authSession";
-const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 jours
-
 function getStoredSession() {
-  const rawSession = localStorage.getItem(SESSION_KEY);
-  const legacyToken = localStorage.getItem("token");
-  const legacyEmail = localStorage.getItem("userEmail");
-
-  if (!rawSession) {
-    if (legacyToken && legacyEmail) {
-      return { token: legacyToken, email: legacyEmail, expiresAt: null };
-    }
-    return null;
-  }
-
-  try {
-    const session = JSON.parse(rawSession);
-    if (!session?.token || !session?.email) return null;
-    return session;
-  } catch (error) {
-    console.warn("Session invalide dans le stockage local.");
-    return null;
-  }
+  return AuthSession.get();
 }
 
 function clearSession() {
-  localStorage.removeItem(SESSION_KEY);
-  localStorage.removeItem("token");
-  localStorage.removeItem("userEmail");
-  localStorage.removeItem("accountType");
+  AuthSession.clear();
 }
 
 function getActiveSession() {
-  const session = getStoredSession();
-  if (!session?.token || !session?.email) return null;
-  if (session.expiresAt && Date.now() >= Number(session.expiresAt)) {
-    clearSession();
-    return null;
-  }
-  return session;
+  return getStoredSession();
 }
 
-function redirectToPersonalSpace() {
-  const session = getActiveSession();
-  const accountType = session?.accountType || localStorage.getItem("accountType") || "pro";
-  window.location.href = accountType === "customer" || accountType === "particulier"
+function redirectToPersonalSpace(session = getActiveSession()) {
+  if (!session?.accountType) return;
+  window.location.href = session.accountType === "customer"
     ? "../espaceParticulier/index.html"
     : "../espacePersonnel/index.html";
 }
 
-function userAlreadyConnected() {
-  const session = getActiveSession();
-  if (!session) return false;
-  persistSession(session.token, session.email, session.accountType);
-  redirectToPersonalSpace();
-  return true;
+function persistSession(token, email, accountType) {
+  return AuthSession.persist(token, email, accountType);
 }
 
-function persistSession(token, email, accountType = "pro") {
-  const session = {
-    token,
-    email,
-    createdAt: Date.now(),
-    expiresAt: Date.now() + SESSION_TTL_MS,
-    accountType
-  };
-  localStorage.setItem(SESSION_KEY, JSON.stringify(session));
-  localStorage.setItem("token", token);
-  localStorage.setItem("userEmail", email);
-  localStorage.setItem("accountType", accountType);
+function isAuthenticationRejection(error) {
+  return [301, 401, 403, 404].includes(Number(error?.response?.status));
+}
+
+async function userAlreadyConnected() {
+  const session = getActiveSession();
+  if (!session) return false;
+
+  const message = document.getElementById?.("message");
+  if (message) {
+    message.textContent = "Vérification de votre session...";
+    message.className = "status show info";
+  }
+
+  try {
+    const accountType = await ApiClient.getUserAccountType(
+      session.token,
+      session.email
+    );
+
+    if (!accountType || (session.accountType && accountType !== session.accountType)) {
+      clearSession();
+      if (message) message.className = "status";
+      return false;
+    }
+
+    const verifiedSession = persistSession(session.token, session.email, accountType);
+    redirectToPersonalSpace(verifiedSession);
+    return true;
+  } catch (error) {
+    if (isAuthenticationRejection(error)) clearSession();
+    if (message) {
+      message.textContent = isAuthenticationRejection(error)
+        ? "Votre session a expiré. Veuillez vous reconnecter."
+        : "La vérification de votre session est temporairement indisponible.";
+      message.className = "status show error";
+    }
+    return false;
+  }
 }
 
 async function checkGuest(guest) {
   try {
     const token = await ApiClient.login(guest.mail, guest.password, guest.accountType);
     if (!token) throw "id";
-    const verifiedAccountType = await ApiClient.getUserAccountType(token, guest.mail, guest.accountType);
-    if (verifiedAccountType !== guest.accountType) throw "id";
+
+    const verifiedAccountType = await ApiClient.getUserAccountType(
+      token,
+      guest.mail
+    );
+    if (verifiedAccountType !== AuthSession.normalizeAccountType(guest.accountType)) throw "id";
+
     guest.token = token;
-    persistSession(token, guest.mail, verifiedAccountType);
+    guest.session = persistSession(token, guest.mail, verifiedAccountType);
     guest.message.textContent = "Connexion réussie";
     guest.message.className = "status show success";
-    cookieWrite(token);
   } catch (error) {
-    if (error === "id") throw error;
-    if (error?.response?.status === 401 || error?.response?.status === 403) throw "id";
+    if (error === "id" || isAuthenticationRejection(error)) throw "id";
     throw "serveur";
   }
-}
-
-function cookieWrite(token) {
-  document.cookie = "token=" + encodeURIComponent(token) + "; path=/annuaire; max-age=" + (SESSION_TTL_MS / 1000) + "; SameSite=Lax; Secure";
 }
 
 function changementStyleBoutton(guest, connectionEnCours) {
@@ -111,29 +102,35 @@ async function main() {
     password: document.getElementById("password").value,
     accountType: document.getElementById("accountType").value,
     token: "",
+    session: null,
     button: document.getElementById("button"),
     message: document.getElementById("message")
   };
 
   try {
     changementStyleBoutton(guest, true);
-    if (userAlreadyConnected()) return guest.token;
     if (!guest.mail) throw "mail";
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(guest.mail)) throw "email";
     if (!guest.password) throw "password";
+    if (!AuthSession.normalizeAccountType(guest.accountType)) throw "accountType";
+
     await checkGuest(guest);
     changementStyleBoutton(guest, false);
-    if (guest.token) redirectToPersonalSpace();
+    if (guest.session) redirectToPersonalSpace(guest.session);
     return guest.token;
   } catch (error) {
     const messageList = {
       mail: "Veuillez indiquer votre adresse mail",
+      email: "Veuillez saisir une adresse mail valide",
       password: "Veuillez indiquer votre mot de passe",
-      id: "Le couple mail/mot de passe ne correspond pas",
-      serveur: "Veuillez vérifier votre connexion / nos serveurs connaissent une pause, veuillez réessayer plus tard"
+      accountType: "Veuillez choisir un type de compte valide",
+      id: "Adresse e-mail ou mot de passe incorrect.",
+      serveur: "Une erreur est survenue. Veuillez réessayer."
     };
     guest.message.textContent = messageList[error] || messageList.serveur;
     guest.message.className = "status show error";
     changementStyleBoutton(guest, false);
+    return "";
   }
 }
 

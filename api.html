@@ -3,55 +3,15 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Test API</title>
+  <title>Outil retiré</title>
   <link rel="stylesheet" href="home/navigation.css">
-  <style>body{margin:0;font-family:Arial,sans-serif}.tool-content{padding:24px}</style>
+  <style>body{margin:0;font-family:Arial,sans-serif}.message{max-width:720px;margin:64px auto;padding:24px}</style>
 </head>
 <body>
   <div data-site-header></div>
-  <main class="tool-content">
-<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-<script>
-  async function request(){
-    let url = 'https://de3qg7ntqblkinxmxfhqoisuhi0pckix.lambda-url.eu-west-3.on.aws/' //mongoProd
-    const mail = document.getElementById('apiMail').value.trim()
-    const password = document.getElementById('apiPassword').value
-    const result = document.getElementById('resultat')
-
-    if (!mail || !password) {
-      result.textContent = 'Renseignez un mail et un mot de passe pour tester la connexion.'
-      return
-    }
-
-    let body = {
-      request:'token',
-      collection:'user',
-      data:{
-        mail,
-        password,
-      }
-    }
-    try {
-      let response = await axios({method:'post', url:url, headers:{}, data:body}).then(response => {return response})
-      const token = response?.data?.data
-      result.textContent = token ? 'Connexion API réussie.' : 'Connexion API refusée.'
-    } catch {
-      result.textContent = 'Connexion API indisponible.'
-    }
-  }
-</script>
-
-<div id='api'>
-  <label for='apiMail'>Adresse mail</label><br/>
-  <input id='apiMail' type='email' autocomplete='off'><br/><br/>
-  <label for='apiPassword'>Mot de passe</label><br/>
-  <input id='apiPassword' type='password' autocomplete='off'><br/><br/>
-  <div style=" margin:20px; width:200px; text-align:center; background:blue; color:white; cursor:pointer" onClick='request()'>
-    Lancer
-  </div><br/>
-  <div id='resultat'>Resultat</div>
-</div>
-
+  <main class="message">
+    <h1>Outil de test retiré</h1>
+    <p>Pour protéger les comptes, les tests de connexion ne sont plus accessibles depuis le site public.</p>
   </main>
   <script src="home/navigation.js"></script>
 </body>
