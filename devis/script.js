@@ -3,13 +3,11 @@ const submitButton = document.getElementById('submitButton');
 const serviceSelect = document.getElementById('service');
 let selectedOffer = null;
 
-try {
-  const session = JSON.parse(localStorage.getItem('authSession'));
-  if ((session?.accountType === 'customer' || session?.accountType === 'particulier') && session?.email) {
-    document.getElementById('email').value = session.email;
-  }
-} catch (error) {
-  console.warn('Session locale illisible :', error);
+const initialSession = AuthSession.get();
+if (initialSession?.accountType === 'customer') {
+  const emailInput = document.getElementById('email');
+  emailInput.value = initialSession.email;
+  emailInput.readOnly = true;
 }
 
 function normalizePrestations(value) {
@@ -82,8 +80,15 @@ function renderOffer(offer) {
 document.getElementById('quoteForm').addEventListener('submit', async (event) => {
   event.preventDefault();
   if (!selectedOffer?.mail || !event.currentTarget.reportValidity()) return;
-  const data = new FormData(event.currentTarget);
+  const session = AuthSession.get();
   const status = document.getElementById('formStatus');
+  if (!session || session.accountType !== 'customer') {
+    status.className = 'status error';
+    status.textContent = 'Connectez-vous avec un compte particulier pour envoyer une demande de devis.';
+    return;
+  }
+
+  const data = new FormData(event.currentTarget);
   const payload = {
     requestId: window.crypto?.randomUUID?.() || `quote-${Date.now()}`,
     offerId: selectedOffer.id || selectedOffer.key,
@@ -94,7 +99,7 @@ document.getElementById('quoteForm').addEventListener('submit', async (event) =>
     service: String(data.get('service')),
     customerFirstName: String(data.get('firstName')).trim(),
     customerLastName: String(data.get('lastName')).trim(),
-    customerEmail: String(data.get('email')).trim().toLowerCase(),
+    customerEmail: session.email,
     customerPhone: String(data.get('phone')).trim(),
     postalCode: String(data.get('postalCode')).trim(),
     desiredDate: String(data.get('desiredDate') || ''),
@@ -109,8 +114,14 @@ document.getElementById('quoteForm').addEventListener('submit', async (event) =>
   status.textContent = '';
   try {
     if (!window.ApiClient?.createQuoteRequest) throw new Error('API indisponible');
-    await window.ApiClient.createQuoteRequest(payload);
+    const accountType = await window.ApiClient.getUserAccountType(session.token, session.email);
+    if (accountType !== 'customer') {
+      AuthSession.clear();
+      throw new Error('Session particulier requise');
+    }
+    await window.ApiClient.createQuoteRequest(session.token, payload);
     event.currentTarget.reset();
+    document.getElementById('email').value = session.email;
     status.className = 'status success';
     status.textContent = 'Votre demande a bien été transmise au professionnel. Elle est en attente de validation.';
   } catch (error) {

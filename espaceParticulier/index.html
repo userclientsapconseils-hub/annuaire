@@ -21,26 +21,82 @@
 </section></main>
 <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 <script src="../connect/api.js"></script>
+<script src="../connect/session.js"></script>
 <script>
-const SESSION_KEY='authSession';
-const SESSION_TTL_MS=30*24*60*60*1000;
-function logout(){['authSession','token','userEmail','accountType'].forEach(k=>localStorage.removeItem(k));location.href='../connect/index.html'}
-function getSession(){
-  try{
-    const value=JSON.parse(localStorage.getItem(SESSION_KEY));
-    if(!value?.token||!value?.email||(value.expiresAt&&Date.now()>=Number(value.expiresAt)))return null;
-    return value;
-  }catch{return null}
+function logout() {
+  AuthSession.clear();
+  location.href = '../connect/index.html';
 }
-const session=getSession();
-if(!session)logout();
-const email=String(session?.email||'').trim().toLowerCase();
-document.getElementById('email').textContent=email;
-document.getElementById('logout').onclick=logout;
-function parse(value){if(typeof value==='string'){try{return parse(JSON.parse(value))}catch{return[]}}if(Array.isArray(value))return value.flatMap(parse);if(!value||typeof value!=='object')return[];const own=('customerEmail'in value||'professionalMail'in value)?[value]:[];return own.concat(['data','body','items','records','results'].flatMap(k=>k in value?parse(value[k]):[]))}
-function esc(value){return String(value||'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#039;')}
-function date(value){const d=new Date(value);return value&&!Number.isNaN(d.getTime())?new Intl.DateTimeFormat('fr-FR',{dateStyle:'medium'}).format(d):'Non précisée'}
-(async()=>{const status=document.getElementById('status'),root=document.getElementById('requests');try{const accountType=await ApiClient.getUserAccountType(session.token,email);if(accountType!=='customer'){logout();return}localStorage.setItem(SESSION_KEY,JSON.stringify({...session,email,accountType,expiresAt:Date.now()+SESSION_TTL_MS}));localStorage.setItem('accountType',accountType);const payload=await ApiClient.findCustomerQuoteRequests(session.token,email);const items=parse(payload).filter(x=>String(x.customerEmail||'').trim().toLowerCase()===email).sort((a,b)=>String(b.createdAt||'').localeCompare(String(a.createdAt||'')));status.style.display='none';if(!items.length){root.innerHTML='<p class="empty">Vous n’avez envoyé aucune demande de devis pour le moment.</p>';return}const labels={pending:'En attente',validated:'Validée',rejected:'Refusée'};root.innerHTML=`<div class="table-wrap"><table><thead><tr><th>Professionnel</th><th>Prestation</th><th>Envoyée le</th><th>Date souhaitée</th><th>Statut</th></tr></thead><tbody>${items.map(x=>{const s=['pending','validated','rejected'].includes(x.status)?x.status:'pending';return `<tr><td>${esc(x.professionalName||x.professionalMail)}</td><td>${esc(x.service||'À préciser')}</td><td>${esc(date(x.createdAt))}</td><td>${esc(date(x.desiredDate))}</td><td><span class="badge ${s}">${labels[s]}</span></td></tr>`}).join('')}</tbody></table></div>`}catch(error){console.warn('Impossible de vérifier votre session ou de charger vos demandes.');status.className='status warning';status.textContent='Impossible de vérifier votre session ou de charger vos demandes pour le moment.'}})();
+
+function parse(value) {
+  if (typeof value === 'string') {
+    try { return parse(JSON.parse(value)); } catch { return []; }
+  }
+  if (Array.isArray(value)) return value.flatMap(parse);
+  if (!value || typeof value !== 'object') return [];
+  const own = ('customerEmail' in value || 'professionalMail' in value) ? [value] : [];
+  return own.concat(['data', 'body', 'items', 'records', 'results'].flatMap((key) => key in value ? parse(value[key]) : []));
+}
+
+function esc(value) {
+  return String(value || '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#039;');
+}
+
+function date(value) {
+  const parsedDate = new Date(value);
+  return value && !Number.isNaN(parsedDate.getTime())
+    ? new Intl.DateTimeFormat('fr-FR', { dateStyle: 'medium' }).format(parsedDate)
+    : 'Non précisée';
+}
+
+document.getElementById('logout').onclick = logout;
+
+(async () => {
+  const status = document.getElementById('status');
+  const root = document.getElementById('requests');
+  const session = AuthSession.get();
+  if (!session) {
+    logout();
+    return;
+  }
+
+  const email = session.email;
+  document.getElementById('email').textContent = email;
+
+  try {
+    const accountType = await ApiClient.getUserAccountType(session.token, email);
+    if (accountType !== 'customer') {
+      logout();
+      return;
+    }
+
+    AuthSession.persist(session.token, email, accountType);
+    const payload = await ApiClient.findCustomerQuoteRequests(session.token, email);
+    const items = parse(payload)
+      .filter((item) => String(item.customerEmail || '').trim().toLowerCase() === email)
+      .sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+
+    status.style.display = 'none';
+    if (!items.length) {
+      root.innerHTML = '<p class="empty">Vous n’avez envoyé aucune demande de devis pour le moment.</p>';
+      return;
+    }
+
+    const labels = { pending: 'En attente', validated: 'Validée', rejected: 'Refusée' };
+    root.innerHTML = `<div class="table-wrap"><table><thead><tr><th>Professionnel</th><th>Prestation</th><th>Envoyée le</th><th>Date souhaitée</th><th>Statut</th></tr></thead><tbody>${items.map((item) => {
+      const itemStatus = ['pending', 'validated', 'rejected'].includes(item.status) ? item.status : 'pending';
+      return `<tr><td>${esc(item.professionalName || item.professionalMail)}</td><td>${esc(item.service || 'À préciser')}</td><td>${esc(date(item.createdAt))}</td><td>${esc(date(item.desiredDate))}</td><td><span class="badge ${itemStatus}">${labels[itemStatus]}</span></td></tr>`;
+    }).join('')}</tbody></table></div>`;
+  } catch (error) {
+    if ([301, 401, 403, 404].includes(Number(error?.response?.status))) {
+      logout();
+      return;
+    }
+    console.warn('Impossible de vérifier votre session ou de charger vos demandes.');
+    status.className = 'status warning';
+    status.textContent = 'Impossible de vérifier votre session ou de charger vos demandes pour le moment.';
+  }
+})();
 </script>
   <script src="../home/navigation.js"></script>
 </body></html>

@@ -34,7 +34,9 @@ function httpError(status) {
 
 (async () => {
   assert.equal(await createClient([{ data: { token: "token-top" } }]).client.login("pro@example.fr", "secret"), "token-top");
+  assert.equal(await createClient([{ data: { token: 98765432101 } }]).client.login("pro@example.fr", "secret"), "98765432101");
   assert.equal(await createClient([wrappedData("token-simple")]).client.login("pro@example.fr", "secret"), "token-simple");
+  assert.equal(await createClient([wrappedData(123456789012)]).client.login("pro@example.fr", "secret"), "123456789012");
   assert.equal(await createClient([wrappedData('{"token":"token-json"}')]).client.login("pro@example.fr", "secret"), "token-json");
   assert.equal(await createClient([wrappedData({ data: { token: "token-nested" } })]).client.login("pro@example.fr", "secret"), "token-nested");
   assert.equal(await createClient([{ data: { body: { token: "token-body" } } }]).client.login("pro@example.fr", "secret"), "token-body");
@@ -69,32 +71,59 @@ function httpError(status) {
 
   const legacyFallbackAfterEmpty = createClient([
     wrappedData(null),
-    wrappedData("legacy-token")
+    wrappedData("legacy-token"),
+    wrappedData([{ mail: "legacy@example.fr" }])
   ]);
   assert.equal(await legacyFallbackAfterEmpty.client.login("legacy@example.fr", "legacy-password", "pro"), "legacy-token");
-  assert.equal(legacyFallbackAfterEmpty.requests.length, 2);
+  assert.equal(legacyFallbackAfterEmpty.requests.length, 3);
   assert.equal(legacyFallbackAfterEmpty.requests[0].data.type, "pro");
   assert.equal("type" in legacyFallbackAfterEmpty.requests[1].data, false);
+  assert.equal(legacyFallbackAfterEmpty.requests[2].request, "find");
 
   const legacyFallbackAfter401 = createClient([
     httpError(401),
-    wrappedData("legacy-token-after-401")
+    wrappedData("legacy-token-after-401"),
+    wrappedData([{ mail: "legacy@example.fr" }])
   ]);
   assert.equal(await legacyFallbackAfter401.client.login("legacy@example.fr", "legacy-password", "pro"), "legacy-token-after-401");
-  assert.equal(legacyFallbackAfter401.requests.length, 2);
+  assert.equal(legacyFallbackAfter401.requests.length, 3);
   assert.equal(legacyFallbackAfter401.requests[0].data.type, "pro");
   assert.equal("type" in legacyFallbackAfter401.requests[1].data, false);
 
   const customerLegacyFallback = createClient([
     wrappedData(null),
-    wrappedData("customer-legacy-token")
+    wrappedData("customer-legacy-token"),
+    wrappedData([{ mail: "client@example.fr", type: "customer" }])
   ]);
   assert.equal(await customerLegacyFallback.client.login("client@example.fr", "legacy-password", "customer"), "customer-legacy-token");
   assert.equal(customerLegacyFallback.requests[0].data.type, "customer");
   assert.equal("type" in customerLegacyFallback.requests[1].data, false);
 
+  const ambiguousLegacyFallback = createClient([
+    httpError(301),
+    wrappedData("ambiguous-token"),
+    wrappedData([
+      { mail: "duplicate@example.fr", type: "pro" },
+      { mail: "duplicate@example.fr", type: "customer" }
+    ])
+  ]);
+  assert.equal(
+    await ambiguousLegacyFallback.client.login("duplicate@example.fr", "customer-password", "pro"),
+    null
+  );
+
+  const lambdaNotFoundResponse = createClient([
+    httpError(301),
+    httpError(301)
+  ]);
+  assert.equal(
+    await lambdaNotFoundResponse.client.login("absent@example.fr", "wrong-password", "customer"),
+    null
+  );
+  assert.equal(lambdaNotFoundResponse.requests.length, 2);
+
   const professionalRegistration = createClient([wrappedData({ inserted: true })]);
-  await professionalRegistration.client.registerUser("nouveau-pro@example.fr", "secret-pro", "pro");
+  await professionalRegistration.client.registerUser("NOUVEAU-PRO@EXAMPLE.FR", "secret-pro", "pro");
   assert.equal(professionalRegistration.requests[0].request, "insert");
   assert.equal(professionalRegistration.requests[0].collection, "user");
   assert.equal(professionalRegistration.requests[0].data.mail, "nouveau-pro@example.fr");
@@ -136,15 +165,19 @@ function httpError(status) {
   );
   assert.equal(
     await createClient([wrappedData(duplicateAccounts)], "pro").client.getUserAccountType("token", "same@example.fr"),
-    "pro"
+    null
   );
   assert.equal(
     await createClient([wrappedData(duplicateAccounts)], "customer").client.getUserAccountType("token", "same@example.fr"),
-    "customer"
+    null
+  );
+  assert.equal(
+    await createClient([wrappedData(duplicateAccounts)]).client.getUserAccountType("token", "same@example.fr", "pro"),
+    null
   );
   assert.equal(
     await createClient([wrappedData(duplicateAccounts)]).client.getUserAccountType("token", "same@example.fr", "particulier"),
-    "customer"
+    null
   );
 
   const legacyProAndCustomer = [
@@ -152,18 +185,27 @@ function httpError(status) {
     { mail: "legacy-same@example.fr", type: "customer" }
   ];
   assert.equal(
-    await createClient([wrappedData(legacyProAndCustomer)], "pro").client.getUserAccountType("token", "legacy-same@example.fr"),
-    "pro"
+    await createClient([wrappedData(legacyProAndCustomer)]).client.getUserAccountType("token", "legacy-same@example.fr", "pro"),
+    null
   );
   assert.equal(
-    await createClient([wrappedData(legacyProAndCustomer)], "customer").client.getUserAccountType("token", "legacy-same@example.fr"),
-    "customer"
+    await createClient([wrappedData(legacyProAndCustomer)]).client.getUserAccountType("token", "legacy-same@example.fr", "customer"),
+    null
   );
 
   const wrongSelectedType = [{ mail: "pro-only@example.fr", type: "pro" }];
   assert.equal(
-    await createClient([wrappedData(wrongSelectedType)], "customer").client.getUserAccountType("token", "pro-only@example.fr"),
-    null
+    await createClient([wrappedData(wrongSelectedType)]).client.getUserAccountType("token", "pro-only@example.fr", "customer"),
+    "pro"
+  );
+
+  const quoteCreation = createClient([wrappedData({ inserted: true })]);
+  await quoteCreation.client.createQuoteRequest("customer-token", { customerEmail: "client@example.fr" });
+  assert.equal(quoteCreation.requests[0].token, "customer-token");
+  assert.equal(quoteCreation.requests[0].collection, "quoterequest");
+  await assert.rejects(
+    () => createClient([]).client.createQuoteRequest("", { customerEmail: "client@example.fr" }),
+    /authentication required/
   );
 
   console.log("Tests d'authentification typée et legacy réussis.");

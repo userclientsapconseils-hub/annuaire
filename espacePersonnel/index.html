@@ -222,9 +222,8 @@
 
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <script src="../connect/api.js"></script>
+  <script src="../connect/session.js"></script>
   <script>
-    const SESSION_KEY = "authSession";
-    const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 jours
     const userEmailEl = document.getElementById("userEmail");
     const logoutBtn = document.getElementById("logoutBtn");
     const createAdActions = document.getElementById("createAdActions");
@@ -238,57 +237,22 @@
     let currentQuoteRequests = [];
 
     function getStoredSession() {
-      const legacyToken = localStorage.getItem("token");
-      const legacyEmail = localStorage.getItem("userEmail");
-      const rawSession = localStorage.getItem(SESSION_KEY);
-
-      if (!rawSession) {
-        if (legacyToken && legacyEmail) {
-          return { token: legacyToken, email: legacyEmail, expiresAt: null };
-        }
-        return null;
-      }
-
-      try {
-        const parsed = JSON.parse(rawSession);
-        if (!parsed?.token || !parsed?.email) return null;
-        return parsed;
-      } catch (error) {
-        console.error("Session invalide dans le stockage local :", error);
-        return null;
-      }
+      return AuthSession.get();
     }
 
     function persistSession(token, email, accountType = "pro") {
-      const session = {
-        token,
-        email,
-        createdAt: Date.now(),
-        expiresAt: Date.now() + SESSION_TTL_MS,
-        accountType
-      };
-      localStorage.setItem(SESSION_KEY, JSON.stringify(session));
-      localStorage.setItem("token", token);
-      localStorage.setItem("userEmail", email);
-      localStorage.setItem("accountType", accountType);
+      return AuthSession.persist(token, email, accountType);
     }
 
     function getActiveSession() {
       const session = getStoredSession();
       if (!session?.token || !session?.email) return null;
 
-      if (session.expiresAt && Date.now() >= Number(session.expiresAt)) {
-        return null;
-      }
-
       return session;
     }
 
     function forceLogout() {
-      localStorage.removeItem(SESSION_KEY);
-      localStorage.removeItem("token");
-      localStorage.removeItem("userEmail");
-      localStorage.removeItem("accountType");
+      AuthSession.clear();
       window.location.href = "../connect/index.html";
     }
 
@@ -629,6 +593,10 @@
       try {
         accountType = await ApiClient.getUserAccountType(token, userEmail);
       } catch (error) {
+        if ([301, 401, 403, 404].includes(Number(error?.response?.status))) {
+          forceLogout();
+          return;
+        }
         console.error("Impossible de vérifier la session :", error);
         showDraftStatus("Vérification distante indisponible. Veuillez réessayer dans quelques instants.", "warning");
         return;
