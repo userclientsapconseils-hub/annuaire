@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Contact</title>
+  <link rel="stylesheet" href="../home/navigation.css" />
+  <style>
+    :root{--red:#e53935;--bg:#0b0f17;--card:#fff;--stroke:#e5e7eb;--text:#111;--muted:#4b5563;--shadow:0 18px 45px rgba(0,0,0,.15)}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--text)}
+    .hero{min-height:100vh;background:linear-gradient(to bottom,rgba(10,14,24,.7),rgba(10,14,24,.9)),url("https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=2400&q=80") center/cover}
+    .container{width:min(680px,92vw);margin:0 auto;padding:56px 0 80px}
+    .panel{background:var(--card);border-radius:16px;box-shadow:var(--shadow);padding:28px}
+    h1{margin:0 0 10px;font-size:30px}
+    .intro{margin:0 0 24px;color:var(--muted);line-height:1.5}
+    .field{margin-bottom:16px}
+    label{display:block;margin-bottom:6px;font-weight:600}
+    input,textarea{width:100%;border:1px solid var(--stroke);border-radius:8px;padding:11px 12px;font:inherit}
+    textarea{min-height:150px;resize:vertical}
+    button{border:0;border-radius:8px;background:var(--red);color:#fff;padding:12px 18px;font:inherit;font-weight:700;cursor:pointer}
+    @media(max-width:720px){.container{width:min(680px,94vw);padding:32px 0 56px}.panel{padding:20px}}
+  </style>
+</head>
+<body>
+  <section class="hero">
+    <div data-site-header></div>
+    <main class="container">
+      <section class="panel" aria-labelledby="contact-title">
+        <h1 id="contact-title">Contact</h1>
+        <p class="intro">Une question ou besoin d’aide ? Laissez-nous un message.</p>
+        <form action="#" method="post">
+          <div class="field">
+            <label for="name">Nom</label>
+            <input id="name" name="name" type="text" autocomplete="name" required />
+          </div>
+          <div class="field">
+            <label for="email">Adresse e-mail</label>
+            <input id="email" name="email" type="email" autocomplete="email" required />
+          </div>
+          <div class="field">
+            <label for="message">Message</label>
+            <textarea id="message" name="message" required></textarea>
+          </div>
+          <button type="submit">Envoyer</button>
+        </form>
+      </section>
+    </main>
+  </section>
+  <script src="../home/navigation.js"></script>
+</body>
+</html>

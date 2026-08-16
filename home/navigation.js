@@ -15,8 +15,9 @@
             <span>Accueil</span>
           </a>
           <nav class="menu" id="mainMenu" aria-label="Menu principal">
-            <a href="${href("inscriptiontest.html")}">Les Prestations</a>
+            <a href="${href("inscriptiontest.html")}">Services</a>
             <a href="${href("annonces/index.html")}">Annonces</a>
+            <a href="${href("contact/index.html")}">Contact</a>
           </nav>
         </div>
         <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="mainMenu">
