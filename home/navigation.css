@@ -13,9 +13,11 @@
 .site-header .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 @media(max-width:720px){
   .site-header .nav{height:64px;padding:0 16px}
+  .site-header .nav-left,.site-header .nav-right{gap:8px}
   .site-header .menu-toggle{display:flex}
   .site-header .menu{display:none}
   .site-header .nav.menu-open .menu{display:flex;position:absolute;top:56px;left:16px;right:16px;margin:0;padding:12px 14px;border:1px solid rgba(255,255,255,.2);border-radius:12px;background:rgba(10,14,24,.98);flex-direction:column;align-items:flex-start;gap:10px}
-  .site-header .nav-right a:not(.btn-primary){display:none}
-  .site-header .btn-primary span:last-child{display:none}
+  .site-header .nav-right a{font-size:12px;gap:4px}
+  .site-header .nav-right .icon,.site-header .btn-primary span[aria-hidden="true"]{display:none}
+  .site-header .btn-primary{padding:8px 10px}
 }
