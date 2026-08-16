@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Créer mon annonce</title>
+<title>Inscription</title>
 
 <style>
 :root{
@@ -391,7 +391,7 @@ textarea{
   <main class="container">
     <div class="panel-shell">
 
-      <div class="stepper-wrap">
+      <div class="stepper-wrap" id="stepperWrap">
         <div class="stepper" aria-label="Progression">
           <span class="dot" data-dot="1" aria-hidden="true"></span>
           <span class="line" aria-hidden="true"></span>
@@ -402,8 +402,8 @@ textarea{
       </div>
 
       <div class="panel">
-        <h1>Inscription</h1>
-        <p class="helper">Choisissez votre type de compte, créez-le puis, si vous êtes professionnel, renseignez votre annonce.</p>
+        <h1 id="pageHeading">Inscription</h1>
+        <p class="helper" id="pageHelper">Choisissez votre type de compte puis créez votre compte.</p>
 
         <div id="resumeNotice" class="notice" style="display:none;">
           Un brouillon d’annonce a été retrouvé. Vous pouvez reprendre votre saisie.
@@ -433,13 +433,13 @@ textarea{
 
               <div class="form-group full">
                 <label for="registerPassword">Mot de passe</label>
-                <input id="registerPassword" name="registerPassword" type="password" minlength="12" maxlength="128" autocomplete="new-password" aria-describedby="passwordHelp" placeholder="12 caractères minimum" required>
-                <small id="passwordHelp">Utilisez au moins 12 caractères.</small>
+                <input id="registerPassword" name="registerPassword" type="password" maxlength="128" autocomplete="new-password" aria-describedby="passwordHelp" placeholder="Saisissez votre mot de passe" required>
+                <small id="passwordHelp">Choisissez votre mot de passe.</small>
               </div>
 
               <div class="form-group full">
                 <label for="registerPasswordConfirmation">Confirmez le mot de passe</label>
-                <input id="registerPasswordConfirmation" name="registerPasswordConfirmation" type="password" minlength="12" maxlength="128" autocomplete="new-password" placeholder="Saisissez à nouveau votre mot de passe" required>
+                <input id="registerPasswordConfirmation" name="registerPasswordConfirmation" type="password" maxlength="128" autocomplete="new-password" placeholder="Saisissez à nouveau votre mot de passe" required>
               </div>
             </div>
 
@@ -502,7 +502,7 @@ textarea{
 
               <div class="form-group">
                 <label for="cp">Code postal</label>
-                <input id="cp" name="cp" type="text" inputmode="numeric" maxlength="5" pattern="[0-9]{1,5}" placeholder="Ex : 38000">
+                <input id="cp" name="cp" type="text" inputmode="numeric" maxlength="5" pattern="[0-9]{5}" placeholder="Ex : 38000" required>
               </div>
 
               <div class="form-group">
@@ -623,7 +623,11 @@ textarea{
   const statusBox = document.getElementById("statusBox");
   const previewBox = document.getElementById("previewBox");
   const resumeNotice = document.getElementById("resumeNotice");
+  const pageHeading = document.getElementById("pageHeading");
+  const pageHelper = document.getElementById("pageHelper");
+  const stepperWrap = document.getElementById("stepperWrap");
   let existingAd = null;
+  let adManagementMode = false;
 
   const adFieldIds = [
     "nom",
@@ -647,6 +651,16 @@ textarea{
   function hideStatus() {
     statusBox.className = "status";
     statusBox.textContent = "";
+  }
+
+  function enterAdManagementMode() {
+    adManagementMode = true;
+    accountType = "pro";
+    document.title = "Gérer mon annonce";
+    pageHeading.textContent = "Gérer mon annonce";
+    pageHelper.textContent = "Créez ou modifiez l’annonce présentée aux particuliers.";
+    stepperWrap.style.display = "none";
+    go(3);
   }
 
   function render() {
@@ -827,8 +841,8 @@ textarea{
       return;
     }
 
-    if (password.length < 12 || password.length > 128) {
-      showStatus("Le mot de passe doit contenir entre 12 et 128 caractères.", "error");
+    if (!password || password.length > 128) {
+      showStatus("Veuillez saisir un mot de passe de 128 caractères maximum.", "error");
       return;
     }
 
@@ -868,10 +882,8 @@ textarea{
         return;
       }
 
-      saveDraft();
-
-      showStatus("Compte créé avec succès. Vous pouvez maintenant créer votre annonce.", "success");
-      go(3);
+      window.location.href = "../espacePersonnel/index.html";
+      return;
 
     } catch (error) {
       console.error("Erreur API inscription.");
@@ -896,7 +908,7 @@ textarea{
     if (adData.prestations.some(item => !item.prestation || !item.tarifHt)) return "Chaque prestation doit contenir un libellé et un tarif/h HT.";
     if (!adData.nom) return "Veuillez renseigner votre NOM.";
     if (!adData.prenom) return "Veuillez renseigner votre prénom.";
-    if (!/^[0-9]{1,5}$/.test(adData.cp)) return "Le code postal doit être un nombre de 5 chiffres maximum.";
+    if (!/^[0-9]{5}$/.test(adData.cp)) return "Le code postal doit contenir exactement 5 chiffres.";
     if (!adData.ville) return "Veuillez renseigner votre ville.";
     if (!adData.adresse1) return "Veuillez renseigner l’adresse 1.";
     if (!adData.description) return "Veuillez renseigner la description.";
@@ -1136,7 +1148,7 @@ textarea{
       fillAdForm(saved);
       setSubmitButtonLabel();
       saveDraft();
-      go(3);
+      enterAdManagementMode();
       showStatus("Annonce enregistrée retrouvée. Vous pouvez la consulter et la modifier.", "info");
     } catch (error) {
       console.error("Impossible de charger l'annonce existante :", error);
@@ -1160,6 +1172,12 @@ textarea{
     previewBox.classList.remove("show");
     hideStatus();
     saveDraft();
+
+    if (adManagementMode) {
+      window.location.href = "../espacePersonnel/index.html";
+      return;
+    }
+
     go(2);
   });
 
@@ -1262,15 +1280,15 @@ textarea{
     registerEmail.value = savedEmail;
   }
 
-  if (foundDraft) {
-    resumeNotice.style.display = "block";
-  }
-
   if (savedToken && savedEmail && savedSession.accountType === "pro") {
     if (foundDraft || shouldResume || fromDashboard) {
-      accountType = "pro";
-      go(3);
-      showStatus("Vous êtes connecté. Vous pouvez reprendre votre annonce.", "info");
+      enterAdManagementMode();
+
+      if (foundDraft) {
+        resumeNotice.style.display = "block";
+      }
+
+      showStatus("Vous êtes connecté. Vous pouvez gérer votre annonce.", "info");
     }
     loadSavedAd(savedToken);
   }
