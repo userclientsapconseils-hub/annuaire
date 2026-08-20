@@ -210,7 +210,7 @@
       <section class="quote-requests" aria-labelledby="quoteRequestsTitle">
         <div class="quote-requests-header">
           <div>
-            <h2 id="quoteRequestsTitle">Mes demandes de devis en attente de validation</h2>
+            <h2 id="quoteRequestsTitle">Mes demandes de devis</h2>
             <p>Validez ou refusez les nouvelles demandes reçues depuis vos annonces.</p>
           </div>
           <span class="quote-counter" id="pendingQuoteCount" aria-label="Demandes en attente">0</span>
@@ -441,44 +441,58 @@
       }
     }
 
-    function collectQuoteRequests(value, requests, seen) {
+    function collectQuoteRecords(value, records, seen) {
       const parsed = parseApiData(value);
       if (parsed === null || parsed === undefined) return;
       if (Array.isArray(parsed)) {
-        parsed.forEach((item) => collectQuoteRequests(item, requests, seen));
+        parsed.forEach((item) => collectQuoteRecords(item, records, seen));
         return;
       }
       if (typeof parsed !== "object" || seen.has(parsed)) return;
       seen.add(parsed);
-      if (Object.prototype.hasOwnProperty.call(parsed, "professionalMail")
+      if (Object.prototype.hasOwnProperty.call(parsed, "requestId")
         || Object.prototype.hasOwnProperty.call(parsed, "customerEmail")) {
-        requests.push(parsed);
+        records.push(parsed);
       }
       API_COLLECTION_KEYS.forEach((key) => {
         if (Object.prototype.hasOwnProperty.call(parsed, key)) {
-          collectQuoteRequests(parsed[key], requests, seen);
+          collectQuoteRecords(parsed[key], records, seen);
         }
       });
     }
 
-    function normalizeQuoteRequests(payload) {
-      const requests = [];
-      collectQuoteRequests(payload, requests, new Set());
-      return requests.map((request) => ({
-        ...request,
-        id: String(request.id || request._id || request.requestId || "").trim(),
-        professionalMail: normalizeEmail(request.professionalMail),
-        customerFirstName: String(request.customerFirstName || "").trim(),
-        customerLastName: String(request.customerLastName || "").trim(),
-        customerEmail: String(request.customerEmail || "").trim(),
-        customerPhone: String(request.customerPhone || "").trim(),
-        service: String(request.service || "Demande à préciser").trim(),
-        postalCode: String(request.postalCode || "").trim(),
-        desiredDate: String(request.desiredDate || "").trim(),
-        message: String(request.message || "").trim(),
-        status: ["pending", "validated", "rejected"].includes(request.status) ? request.status : "pending",
-        createdAt: String(request.createdAt || "").trim()
+    function normalizeQuoteRecords(payload) {
+      const records = [];
+      collectQuoteRecords(payload, records, new Set());
+      return records.map((record) => ({
+        ...record,
+        id: String(record.id || record._id || record.requestId || "").trim(),
+        requestId: String(record.requestId || "").trim(),
+        userNumber: Number(record.userNumber) || null,
+        share: Number(record.share) || null,
+        professionalUserNumber: Number(record.professionalUserNumber) || null,
+        professionalName: String(record.professionalName || "").trim(),
+        customerFirstName: String(record.customerFirstName || "").trim(),
+        customerLastName: String(record.customerLastName || "").trim(),
+        customerEmail: String(record.customerEmail || "").trim(),
+        customerPhone: String(record.customerPhone || "").trim(),
+        service: String(record.service || "Demande à préciser").trim(),
+        postalCode: String(record.postalCode || "").trim(),
+        desiredDate: String(record.desiredDate || "").trim(),
+        message: String(record.message || "").trim(),
+        status: ["pending", "validated", "rejected"].includes(record.status) ? record.status : "pending",
+        createdAt: String(record.createdAt || record.date || "").trim(),
+        respondedAt: String(record.respondedAt || record.date || "").trim()
       }));
+    }
+
+    function findLatestQuoteResponse(request, responses) {
+      const professionalUserNumber = request.professionalUserNumber || request.share;
+      return responses
+        .filter((response) => response.requestId === request.requestId
+          && response.userNumber === professionalUserNumber
+          && ["validated", "rejected"].includes(response.status))
+        .sort((a, b) => b.respondedAt.localeCompare(a.respondedAt))[0] || null;
     }
 
     function formatQuoteDate(value) {
@@ -523,14 +537,22 @@
       </table></div>`;
     }
 
-    async function loadQuoteRequests(token, userEmail) {
+    async function loadQuoteRequests(token) {
       quoteRequestsStatus.className = "status show info";
       quoteRequestsStatus.textContent = "Chargement de vos demandes de devis...";
       quoteRequestsTable.innerHTML = "";
       try {
-        const payload = await ApiClient.findQuoteRequests(token, normalizeEmail(userEmail));
-        currentQuoteRequests = normalizeQuoteRequests(payload)
-          .filter((request) => request.professionalMail === normalizeEmail(userEmail));
+        const [requestsPayload, responsesPayload] = await Promise.all([
+          ApiClient.findQuoteRequests(token),
+          ApiClient.findQuoteResponses(token)
+        ]);
+        const requests = normalizeQuoteRecords(requestsPayload)
+          .filter((request) => request.requestId && request.customerEmail && request.userNumber);
+        const responses = normalizeQuoteRecords(responsesPayload);
+        currentQuoteRequests = requests.map((request) => {
+          const response = findLatestQuoteResponse(request, responses);
+          return { ...request, status: response?.status || "pending" };
+        });
         renderQuoteRequests();
         quoteRequestsStatus.className = "status";
         quoteRequestsStatus.textContent = "";
@@ -547,16 +569,17 @@
       const session = getActiveSession();
       const request = currentQuoteRequests.find((item) => item.id === button.dataset.quoteId);
       if (!session || !request) return;
-      button.disabled = true;
+      const actionButtons = [...button.closest(".quote-actions").querySelectorAll("button")];
+      actionButtons.forEach((actionButton) => { actionButton.disabled = true; });
       try {
-        await ApiClient.updateQuoteRequestStatus(session.token, request, button.dataset.quoteStatus);
+        await ApiClient.createQuoteResponse(session.token, request, button.dataset.quoteStatus);
         request.status = button.dataset.quoteStatus;
         renderQuoteRequests();
       } catch (error) {
         console.error("Impossible de mettre à jour la demande de devis :", error);
         quoteRequestsStatus.className = "status show warning";
         quoteRequestsStatus.textContent = "Le statut de la demande n’a pas pu être mis à jour.";
-        button.disabled = false;
+        actionButtons.forEach((actionButton) => { actionButton.disabled = false; });
       }
     });
 
@@ -616,7 +639,7 @@
       adActionBtn.style.opacity = "";
       refreshDraftUI();
       loadApiOffer(token, userEmail);
-      loadQuoteRequests(token, userEmail);
+      loadQuoteRequests(token);
     }
 
     initDashboard();
@@ -625,3 +648,4 @@
   <script src="../home/navigation.js"></script>
 </body>
 </html>
+
