@@ -30,6 +30,9 @@
 - Validation de l’e-mail, longueur de mot de passe de 12 à 128 caractères et confirmation du mot de passe.
 - Connexion automatique après inscription fondée uniquement sur un vrai jeton de connexion.
 - Demandes de devis limitées aux sessions particulières et envoyées avec leur jeton.
+- Demandes enregistrées dans `privateAsk` avec le compte professionnel comme destinataire (`share`).
+- Validation ou refus enregistré dans `privateQuote`, sans tenter de modifier la demande appartenant au particulier.
+- Statut présenté au particulier uniquement lorsque la réponse provient du professionnel visé par la demande.
 - Pages publiques de laboratoire neutralisées et client API professionnel obsolète supprimé.
 
 ## Tests automatisés
@@ -41,7 +44,9 @@
   - adresse dupliquée ambiguë ;
   - rôle non issu du stockage local ;
   - inscription des deux rôles ;
-  - jeton obligatoire pour les demandes privées.
+  - jeton et destinataire obligatoires pour les demandes privées ;
+  - lecture de `privateAsk` et `privateQuote` ;
+  - validation des statuts et du destinataire d’une réponse professionnelle.
 - `connect/session.test.js` — PASS
   - persistance après rafraîchissement ;
   - migration des anciennes sessions ;
@@ -55,7 +60,8 @@
 - `verification.test.js` — PASS
   - syntaxe des scripts externes et intégrés ;
   - absence de stockage direct du jeton et du rôle dans `localStorage` ;
-  - neutralisation du laboratoire API.
+  - neutralisation du laboratoire API ;
+  - absence de l’ancienne collection `quoterequest` et présence des deux collections privées.
 
 ## Tests navigateur
 
@@ -67,6 +73,12 @@
 - Route particulière sans session redirigée vers la connexion — PASS.
 - Connexion mobile à 390 × 844 sans débordement horizontal — PASS.
 - Erreurs console pendant ces scénarios — aucune.
+- Création d’un compte particulier et d’un compte professionnel dédiés aux tests — PASS.
+- Création et lecture d’une annonce professionnelle fictive — PASS.
+- Envoi privé d’une demande depuis le compte particulier — PASS.
+- Réception puis validation depuis le compte professionnel — PASS.
+- Persistance de la validation après rechargement de l’espace professionnel — PASS.
+- Affichage du statut « Validée » dans l’espace particulier — PASS.
 
 ## Vérification distante sans effet de bord
 
@@ -90,3 +102,4 @@ Les points suivants ne peuvent pas être garantis par ce dépôt statique :
 - protection CSRF correspondant au futur mécanisme de cookie.
 
 Pour terminer la sécurisation, il faut fournir ou modifier le backend de la Lambda et exposer des opérations dédiées (`register`, `login`, `me`, `logout`) ainsi que des endpoints métier qui calculent l’identité et la propriété depuis la session, jamais depuis l’e-mail ou l’identifiant envoyé par le navigateur.
+

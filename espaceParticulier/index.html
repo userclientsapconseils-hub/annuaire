@@ -35,8 +35,8 @@ function parse(value) {
   }
   if (Array.isArray(value)) return value.flatMap(parse);
   if (!value || typeof value !== 'object') return [];
-  const own = ('customerEmail' in value || 'professionalMail' in value) ? [value] : [];
-  return own.concat(['data', 'body', 'items', 'records', 'results'].flatMap((key) => key in value ? parse(value[key]) : []));
+  const own = ('requestId' in value || 'customerEmail' in value) ? [value] : [];
+  return own.concat(['data', 'body', 'items', 'Items', 'records', 'results'].flatMap((key) => key in value ? parse(value[key]) : []));
 }
 
 function esc(value) {
@@ -61,7 +61,7 @@ document.getElementById('logout').onclick = logout;
     return;
   }
 
-  const email = session.email;
+  const email = String(session.email || '').trim().toLowerCase();
   document.getElementById('email').textContent = email;
 
   try {
@@ -72,10 +72,24 @@ document.getElementById('logout').onclick = logout;
     }
 
     AuthSession.persist(session.token, email, accountType);
-    const payload = await ApiClient.findCustomerQuoteRequests(session.token, email);
-    const items = parse(payload)
+    const [requestsPayload, responsesPayload] = await Promise.all([
+      ApiClient.findQuoteRequests(session.token),
+      ApiClient.findQuoteResponses(session.token)
+    ]);
+    const responses = parse(responsesPayload);
+    const items = parse(requestsPayload)
       .filter((item) => String(item.customerEmail || '').trim().toLowerCase() === email)
-      .sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+      .map((item) => {
+        const requestId = String(item.requestId || '').trim();
+        const professionalUserNumber = Number(item.professionalUserNumber || item.share);
+        const response = responses
+          .filter((candidate) => String(candidate.requestId || '').trim() === requestId
+            && Number(candidate.userNumber) === professionalUserNumber
+            && ['validated', 'rejected'].includes(candidate.status))
+          .sort((a, b) => String(b.respondedAt || b.date || '').localeCompare(String(a.respondedAt || a.date || '')))[0];
+        return { ...item, status: response?.status || 'pending' };
+      })
+      .sort((a, b) => String(b.createdAt || b.date || '').localeCompare(String(a.createdAt || a.date || '')));
 
     status.style.display = 'none';
     if (!items.length) {
@@ -86,7 +100,7 @@ document.getElementById('logout').onclick = logout;
     const labels = { pending: 'En attente', validated: 'Validée', rejected: 'Refusée' };
     root.innerHTML = `<div class="table-wrap"><table><thead><tr><th>Professionnel</th><th>Prestation</th><th>Envoyée le</th><th>Date souhaitée</th><th>Statut</th></tr></thead><tbody>${items.map((item) => {
       const itemStatus = ['pending', 'validated', 'rejected'].includes(item.status) ? item.status : 'pending';
-      return `<tr><td>${esc(item.professionalName || item.professionalMail)}</td><td>${esc(item.service || 'À préciser')}</td><td>${esc(date(item.createdAt))}</td><td>${esc(date(item.desiredDate))}</td><td><span class="badge ${itemStatus}">${labels[itemStatus]}</span></td></tr>`;
+      return `<tr><td>${esc(item.professionalName || 'Professionnel')}</td><td>${esc(item.service || 'À préciser')}</td><td>${esc(date(item.createdAt || item.date))}</td><td>${esc(date(item.desiredDate))}</td><td><span class="badge ${itemStatus}">${labels[itemStatus]}</span></td></tr>`;
     }).join('')}</tbody></table></div>`;
   } catch (error) {
     if ([301, 401, 403, 404].includes(Number(error?.response?.status))) {
@@ -101,3 +115,4 @@ document.getElementById('logout').onclick = logout;
 </script>
   <script src="../home/navigation.js"></script>
 </body></html>
+

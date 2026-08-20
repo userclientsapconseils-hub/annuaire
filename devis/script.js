@@ -25,6 +25,11 @@ function normalizeText(value) {
   return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
 }
 
+function getUserNumber(value) {
+  const userNumber = Number(value);
+  return Number.isSafeInteger(userNumber) && userNumber > 0 ? userNumber : null;
+}
+
 function mapOffer(raw = {}, index = 0) {
   const id = String(raw.id || raw._id || '').trim();
   const fallbackKey = [raw.mail, raw.entreprise, raw.cp, raw.ville, index].filter(Boolean).join('-');
@@ -33,6 +38,7 @@ function mapOffer(raw = {}, index = 0) {
     entreprise: String(raw.entreprise || '').trim(), activite: String(raw.activite || '').trim(),
     prenom: String(raw.prenom || '').trim(), nom: String(raw.nom || '').trim(),
     cp: String(raw.cp || '').trim(), ville: String(raw.ville || '').trim(), mail: String(raw.mail || '').trim(),
+    userNumber: getUserNumber(raw.userNumber),
     prestations: normalizePrestations(raw.prestations || raw.prestation)
   };
 }
@@ -52,7 +58,7 @@ function apiCandidates(payload) {
 async function findOffer() {
   try {
     const stored = sessionStorage.getItem('selectedOffer');
-    if (stored) { const offer = mapOffer(JSON.parse(stored)); if (requested(offer)) return offer; }
+    if (stored) { const offer = mapOffer(JSON.parse(stored)); if (requested(offer) && offer.userNumber) return offer; }
   } catch (error) { console.warn('Annonce mémorisée illisible :', error); }
   if (!window.ApiClient?.findOffers) return null;
   return apiCandidates(await window.ApiClient.findOffers({})).map(mapOffer).find(requested) || null;
@@ -73,13 +79,14 @@ function renderOffer(offer) {
     option.textContent = `${option.value}${item.tarifHt ? ` — ${item.tarifHt} € HT/h` : ''}`;
     serviceSelect.append(option);
   });
-  submitButton.disabled = !offer.mail;
-  if (!offer.mail) document.getElementById('loadError').textContent = 'Ce professionnel n’a pas renseigné d’adresse e-mail pour recevoir la demande.';
+  submitButton.disabled = !offer.userNumber;
+  if (!offer.userNumber) document.getElementById('loadError').textContent = 'Cette annonce n’est pas encore reliée à un compte professionnel capable de recevoir une demande.';
 }
 
 document.getElementById('quoteForm').addEventListener('submit', async (event) => {
   event.preventDefault();
-  if (!selectedOffer?.mail || !event.currentTarget.reportValidity()) return;
+  const form = event.currentTarget;
+  if (!selectedOffer?.userNumber || !form.reportValidity()) return;
   const session = AuthSession.get();
   const status = document.getElementById('formStatus');
   if (!session || session.accountType !== 'customer') {
@@ -88,12 +95,13 @@ document.getElementById('quoteForm').addEventListener('submit', async (event) =>
     return;
   }
 
-  const data = new FormData(event.currentTarget);
+  const data = new FormData(form);
   const payload = {
     requestId: window.crypto?.randomUUID?.() || `quote-${Date.now()}`,
     offerId: selectedOffer.id || selectedOffer.key,
     offerKey: selectedOffer.key,
-    professionalMail: selectedOffer.mail.toLowerCase(),
+    share: selectedOffer.userNumber,
+    professionalUserNumber: selectedOffer.userNumber,
     professionalName: selectedOffer.entreprise || `${selectedOffer.prenom} ${selectedOffer.nom}`.trim(),
     activity: selectedOffer.activite,
     service: String(data.get('service')),
@@ -120,7 +128,7 @@ document.getElementById('quoteForm').addEventListener('submit', async (event) =>
       throw new Error('Session particulier requise');
     }
     await window.ApiClient.createQuoteRequest(session.token, payload);
-    event.currentTarget.reset();
+    form.reset();
     document.getElementById('email').value = session.email;
     status.className = 'status success';
     status.textContent = 'Votre demande a bien été transmise au professionnel. Elle est en attente de validation.';
@@ -146,3 +154,4 @@ document.getElementById('quoteForm').addEventListener('submit', async (event) =>
     document.getElementById('loadError').textContent = 'Le chargement de l’annonce est temporairement indisponible.';
   }
 })();
+

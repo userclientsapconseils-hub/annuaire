@@ -243,36 +243,71 @@
 
   async function createQuoteRequest(token, data) {
     if (!token) throw new Error("authentication required");
-    return post({ request: "insert", collection: "quoterequest", token, data });
-  }
+    const professionalUserNumber = Number(data?.share || data?.professionalUserNumber);
+    const requestId = String(data?.requestId || "").trim();
+    if (!Number.isSafeInteger(professionalUserNumber) || professionalUserNumber <= 0 || !requestId) {
+      throw new Error("invalid quote request");
+    }
 
-  async function findQuoteRequests(token, professionalMail) {
-    if (!token) throw new Error("authentication required");
     return post({
-      request: "find",
-      collection: "quoterequest",
+      request: "insert",
+      collection: "privateAsk",
       token,
-      data: { professionalMail }
+      data: {
+        ...data,
+        share: professionalUserNumber,
+        professionalUserNumber,
+        requestId,
+        status: "pending"
+      }
     });
   }
 
-  async function findCustomerQuoteRequests(token, customerEmail) {
+  async function findQuoteRequests(token) {
     if (!token) throw new Error("authentication required");
     return post({
       request: "find",
-      collection: "quoterequest",
+      collection: "privateAsk",
       token,
-      data: { customerEmail }
+      data: {}
     });
   }
 
-  async function updateQuoteRequestStatus(token, quoteRequest, status) {
+  async function findQuoteResponses(token) {
     if (!token) throw new Error("authentication required");
     return post({
-      request: "update",
-      collection: "quoterequest",
+      request: "find",
+      collection: "privateQuote",
       token,
-      data: { ...quoteRequest, status, updatedAt: new Date().toISOString() }
+      data: {}
+    });
+  }
+
+  async function createQuoteResponse(token, quoteRequest, status) {
+    if (!token) throw new Error("authentication required");
+    const normalizedStatus = String(status || "").trim().toLowerCase();
+    const customerUserNumber = Number(quoteRequest?.userNumber);
+    const requestId = String(quoteRequest?.requestId || "").trim();
+    if (!["validated", "rejected"].includes(normalizedStatus)
+      || !Number.isSafeInteger(customerUserNumber)
+      || customerUserNumber <= 0
+      || !requestId) {
+      throw new Error("invalid quote response");
+    }
+
+    const requestDocumentId = String(quoteRequest?.id || quoteRequest?._id || "").trim();
+    return post({
+      request: "insert",
+      collection: "privateQuote",
+      token,
+      data: {
+        share: customerUserNumber,
+        requestId,
+        requestDocumentId,
+        status: normalizedStatus,
+        professionalName: String(quoteRequest?.professionalName || "").trim(),
+        respondedAt: new Date().toISOString()
+      }
     });
   }
 
@@ -287,8 +322,9 @@
     findOfferByMail,
     createQuoteRequest,
     findQuoteRequests,
-    findCustomerQuoteRequests,
-    updateQuoteRequestStatus
+    findQuoteResponses,
+    createQuoteResponse
   };
 
 })(window);
+

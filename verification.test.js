@@ -61,5 +61,24 @@ assert.match(
   /connect\/session\.js/,
   "La demande de devis doit charger le gestionnaire de session."
 );
+assert.match(
+  fs.readFileSync(path.join(root, "devis/index.html"), "utf8"),
+  /id="backToOffer"/,
+  "La page de devis doit fournir le lien de retour utilisé par son script."
+);
+
+const apiSource = fs.readFileSync(path.join(root, "connect/api.js"), "utf8");
+assert.match(apiSource, /collection:\s*"privateAsk"/, "Les demandes doivent être privées.");
+assert.match(apiSource, /collection:\s*"privateQuote"/, "Les réponses du professionnel doivent être privées.");
+assert.doesNotMatch(apiSource, /collection:\s*"quoterequest"/, "L’ancienne collection non prise en charge ne doit plus être utilisée.");
+
+const quoteFormSource = fs.readFileSync(path.join(root, "devis/script.js"), "utf8");
+const professionalAreaSource = fs.readFileSync(path.join(root, "espacePersonnel/index.html"), "utf8");
+const customerAreaSource = fs.readFileSync(path.join(root, "espaceParticulier/index.html"), "utf8");
+assert.match(quoteFormSource, /share:\s*selectedOffer\.userNumber/, "La demande doit cibler le compte propriétaire de l’annonce.");
+assert.match(quoteFormSource, /const form = event\.currentTarget/, "Le formulaire doit rester accessible après l’appel asynchrone.");
+assert.match(professionalAreaSource, /createQuoteResponse/, "Le professionnel doit pouvoir répondre à la demande.");
+assert.match(customerAreaSource, /findQuoteResponses/, "Le particulier doit pouvoir consulter la réponse du professionnel.");
 
 console.log("Vérification globale des scripts réussie.");
+
