@@ -81,6 +81,11 @@ function getApiRecordId(record) {
   return String(record.id || record._id || "").trim();
 }
 
+function getUserNumber(value) {
+  const userNumber = Number(value);
+  return Number.isSafeInteger(userNumber) && userNumber > 0 ? userNumber : null;
+}
+
 function mapOffer(rawOffer, index = 0) {
   const prestations = normalizePrestations(rawOffer?.prestations || rawOffer?.prestation);
   const mail = String(rawOffer?.mail || "").trim();
@@ -97,6 +102,7 @@ function mapOffer(rawOffer, index = 0) {
     ville: String(rawOffer?.ville || "").trim(),
     adresse1: String(rawOffer?.adresse1 || rawOffer?.adresse || "").trim(),
     adresse2: String(rawOffer?.adresse2 || "").trim(),
+    userNumber: getUserNumber(rawOffer?.userNumber),
     mail,
     description: String(rawOffer?.description || "").trim()
   };
@@ -262,3 +268,4 @@ if (nav && menuToggle) {
 
   applyFilters();
 })();
+
