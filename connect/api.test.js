@@ -200,16 +200,66 @@ function httpError(status) {
   );
 
   const quoteCreation = createClient([wrappedData({ inserted: true })]);
-  await quoteCreation.client.createQuoteRequest("customer-token", { customerEmail: "client@example.fr" });
+  await quoteCreation.client.createQuoteRequest("customer-token", {
+    requestId: "request-123",
+    share: 42,
+    customerEmail: "client@example.fr",
+    status: "forged-status"
+  });
   assert.equal(quoteCreation.requests[0].token, "customer-token");
-  assert.equal(quoteCreation.requests[0].collection, "quoterequest");
+  assert.equal(quoteCreation.requests[0].request, "insert");
+  assert.equal(quoteCreation.requests[0].collection, "privateAsk");
+  assert.equal(quoteCreation.requests[0].data.requestId, "request-123");
+  assert.equal(quoteCreation.requests[0].data.share, 42);
+  assert.equal(quoteCreation.requests[0].data.professionalUserNumber, 42);
+  assert.equal(quoteCreation.requests[0].data.status, "pending");
   await assert.rejects(
-    () => createClient([]).client.createQuoteRequest("", { customerEmail: "client@example.fr" }),
+    () => createClient([]).client.createQuoteRequest("", { requestId: "request-123", share: 42 }),
     /authentication required/
   );
+  await assert.rejects(
+    () => createClient([]).client.createQuoteRequest("customer-token", { requestId: "request-123" }),
+    /invalid quote request/
+  );
 
-  console.log("Tests d'authentification typée et legacy réussis.");
+  const quoteRequestSearch = createClient([wrappedData([])]);
+  await quoteRequestSearch.client.findQuoteRequests("professional-token");
+  assert.equal(quoteRequestSearch.requests[0].request, "find");
+  assert.equal(quoteRequestSearch.requests[0].collection, "privateAsk");
+  assert.equal(Object.keys(quoteRequestSearch.requests[0].data).length, 0);
+
+  const quoteResponseSearch = createClient([wrappedData([])]);
+  await quoteResponseSearch.client.findQuoteResponses("customer-token");
+  assert.equal(quoteResponseSearch.requests[0].request, "find");
+  assert.equal(quoteResponseSearch.requests[0].collection, "privateQuote");
+  assert.equal(Object.keys(quoteResponseSearch.requests[0].data).length, 0);
+
+  const quoteResponseCreation = createClient([wrappedData({ inserted: true })]);
+  await quoteResponseCreation.client.createQuoteResponse("professional-token", {
+    id: "mongo-document-id",
+    requestId: "request-123",
+    userNumber: 84,
+    professionalName: "Entreprise de test"
+  }, "validated");
+  assert.equal(quoteResponseCreation.requests[0].request, "insert");
+  assert.equal(quoteResponseCreation.requests[0].collection, "privateQuote");
+  assert.equal(quoteResponseCreation.requests[0].data.share, 84);
+  assert.equal(quoteResponseCreation.requests[0].data.requestId, "request-123");
+  assert.equal(quoteResponseCreation.requests[0].data.requestDocumentId, "mongo-document-id");
+  assert.equal(quoteResponseCreation.requests[0].data.status, "validated");
+  assert.ok(!Number.isNaN(Date.parse(quoteResponseCreation.requests[0].data.respondedAt)));
+  await assert.rejects(
+    () => createClient([]).client.createQuoteResponse("professional-token", { requestId: "request-123", userNumber: 84 }, "pending"),
+    /invalid quote response/
+  );
+  await assert.rejects(
+    () => createClient([]).client.createQuoteResponse("professional-token", { requestId: "request-123" }, "validated"),
+    /invalid quote response/
+  );
+
+  console.log("Tests d'authentification et de demandes de devis réussis.");
 })().catch((error) => {
   console.error(error);
   process.exitCode = 1;
 });
+
