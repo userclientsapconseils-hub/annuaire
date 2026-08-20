@@ -2,9 +2,39 @@
   const currentScript = document.currentScript;
   const defaultRoot = currentScript?.src ? new URL("../", currentScript.src).href : "../";
 
+  function getSession() {
+    try {
+      const session = JSON.parse(window.localStorage.getItem("authSession") || "null");
+      if (!session?.token || !session?.email) return null;
+      if (session.expiresAt && Date.now() >= Number(session.expiresAt)) return null;
+      return session;
+    } catch {
+      return null;
+    }
+  }
+
+  function clearSession() {
+    ["authSession", "token", "userEmail", "accountType"].forEach((key) => {
+      window.localStorage.removeItem(key);
+    });
+  }
+
   document.querySelectorAll("[data-site-header]").forEach((host) => {
     const root = new URL(host.dataset.root || defaultRoot, document.baseURI);
     const href = (path) => new URL(path, root).href;
+    const session = getSession();
+    const personalSpacePath = session?.accountType === "customer"
+      ? "espaceParticulier/index.html"
+      : "espacePersonnel/index.html";
+    const accountLinks = session
+      ? `
+          <a class="btn-primary" href="${href(personalSpacePath)}">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4zm0 2c-4.42 0-8 2-8 4.5V21h16v-2.5C20 16 16.42 14 12 14z"/></svg>
+            <span>Mon espace</span>
+          </a>
+          <a href="${href("index.html")}" data-logout><span>Déconnexion</span></a>`
+      : `
+          ${accountLinks}`;
 
     host.classList.add("site-header");
     host.innerHTML = `
@@ -43,5 +73,8 @@
       nav.classList.remove("menu-open");
       toggle.setAttribute("aria-expanded", "false");
     }));
+    host.querySelector("[data-logout]")?.addEventListener("click", () => {
+      clearSession();
+    });
   });
 })();
