@@ -13,7 +13,7 @@
 <body>
   <div data-site-header></div>
 <main class="container"><section class="card">
-  <div class="top"><h1>Mon espace personnel particulier</h1><button id="logout">Déconnexion</button></div>
+  <div class="top"><h1>Mon espace personnel particulier</h1></div>
   <p>Retrouvez ici toutes les demandes de devis que vous avez envoyées.</p>
   <div class="info"><strong>E-mail :</strong> <span id="email"></span></div>
   <div class="actions"><a class="link" href="../annonces/index.html">Consulter les annonces</a></div>
@@ -49,8 +49,6 @@ function date(value) {
     ? new Intl.DateTimeFormat('fr-FR', { dateStyle: 'medium' }).format(parsedDate)
     : 'Non précisée';
 }
-
-document.getElementById('logout').onclick = logout;
 
 (async () => {
   const status = document.getElementById('status');
@@ -115,4 +113,3 @@ document.getElementById('logout').onclick = logout;
 </script>
   <script src="../home/navigation.js"></script>
 </body></html>
-

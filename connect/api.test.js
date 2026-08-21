@@ -150,6 +150,13 @@ function httpError(status) {
     "pro"
   );
   assert.equal(
+    await createClient([wrappedData([{
+      type: "customer",
+      identification: { keyPublic: "CLIENT-API@EXAMPLE.FR" }
+    }])]).client.getUserAccountType("token", "client-api@example.fr"),
+    "customer"
+  );
+  assert.equal(
     await createClient([wrappedData([{ mail: "legacy@example.fr" }])]).client.getUserAccountType("token", "legacy@example.fr"),
     "pro"
   );
@@ -197,6 +204,22 @@ function httpError(status) {
   assert.equal(
     await createClient([wrappedData(wrongSelectedType)]).client.getUserAccountType("token", "pro-only@example.fr", "customer"),
     "pro"
+  );
+
+  assert.equal(
+    await createClient([wrappedData([{
+      type: "pro",
+      identification: { keyPublic: "session@example.fr" }
+    }])]).client.validateUserSession("token", "session@example.fr"),
+    "valid"
+  );
+  assert.equal(
+    await createClient([httpError(301)]).client.validateUserSession("expired-token", "session@example.fr"),
+    "invalid"
+  );
+  assert.equal(
+    await createClient([httpError(500)]).client.validateUserSession("token", "session@example.fr"),
+    "unknown"
   );
 
   const quoteCreation = createClient([wrappedData({ inserted: true })]);
@@ -262,4 +285,3 @@ function httpError(status) {
   console.error(error);
   process.exitCode = 1;
 });
-

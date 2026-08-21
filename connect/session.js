@@ -18,7 +18,7 @@
     const accountType = normalizeAccountType(value.accountType);
     const expiresAt = Number(value.expiresAt || 0);
 
-    if (!token || !email || !email.includes("@")) return null;
+    if (!token || !email || !email.includes("@") || !accountType) return null;
     if (expiresAt && Date.now() >= expiresAt) return null;
 
     return {
@@ -30,10 +30,13 @@
     };
   }
 
-  function read(storage, key) {
+  function read(storage, key, options = {}) {
     try {
       const raw = storage?.getItem(key);
-      return raw ? normalizeSession(JSON.parse(raw)) : null;
+      if (!raw) return null;
+      const value = JSON.parse(raw);
+      if (options.allowLegacyPro && value && !value.accountType) value.accountType = "pro";
+      return normalizeSession(value);
     } catch {
       return null;
     }
@@ -73,7 +76,7 @@
   }
 
   function migrateLegacySession() {
-    const legacySession = read(global.localStorage, SESSION_KEY);
+    const legacySession = read(global.localStorage, SESSION_KEY, { allowLegacyPro: true });
     let candidate = legacySession;
 
     if (!candidate) {
@@ -81,7 +84,7 @@
         candidate = normalizeSession({
           token: global.localStorage?.getItem("token"),
           email: global.localStorage?.getItem("userEmail"),
-          accountType: global.localStorage?.getItem("accountType")
+          accountType: global.localStorage?.getItem("accountType") || "pro"
         });
       } catch {
         candidate = null;

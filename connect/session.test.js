@@ -73,5 +73,26 @@ function createAuth() {
     assert.equal(auth.normalizeAccountType("admin"), "");
   }
 
+  {
+    const { auth, sessionStore } = createAuth();
+    sessionStore.set("authSession", JSON.stringify({
+      token: "invalid-role-token",
+      email: "client@example.fr",
+      accountType: "admin"
+    }));
+    assert.equal(auth.get(), null);
+    assert.equal(sessionStore.has("authSession"), false);
+  }
+
+  {
+    const { auth, sessionStore, legacyStore } = createAuth();
+    legacyStore.set("authSession", JSON.stringify({
+      token: "legacy-pro-token",
+      email: "legacy-pro@example.fr"
+    }));
+    assert.equal(auth.get().accountType, "pro");
+    assert.equal(sessionStore.has("authSession"), true);
+  }
+
   console.log("Tests du stockage de session réussis.");
 })();

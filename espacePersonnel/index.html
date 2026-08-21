@@ -185,7 +185,6 @@
     <div class="card">
       <div class="top">
         <h1>Mon espace personnel pro</h1>
-        <button id="logoutBtn">Déconnexion</button>
       </div>
 
       <p>Bienvenue dans votre espace professionnel.</p>
@@ -226,7 +225,6 @@
   <script src="../connect/session.js"></script>
   <script>
     const userEmailEl = document.getElementById("userEmail");
-    const logoutBtn = document.getElementById("logoutBtn");
     const createAdActions = document.getElementById("createAdActions");
     const adActionBtn = document.getElementById("adActionBtn");
     const draftStatus = document.getElementById("draftStatus");
@@ -599,10 +597,6 @@
       hideDraftStatus();
     }
 
-    logoutBtn.addEventListener("click", function() {
-      forceLogout();
-    });
-
     async function initDashboard() {
       const session = getActiveSession();
       const token = session?.token || "";
@@ -648,4 +642,3 @@
   <script src="../home/navigation.js"></script>
 </body>
 </html>
-
