@@ -240,20 +240,6 @@ form.addEventListener("submit", (event) => {
   history.replaceState(null, "", `${location.pathname}${params.toString() ? `?${params}` : ""}`);
 });
 
-const nav = document.querySelector(".nav");
-const menuToggle = document.querySelector(".menu-toggle");
-const menuLinks = document.querySelectorAll(".menu a");
-if (nav && menuToggle) {
-  menuToggle.addEventListener("click", () => {
-    const isOpen = nav.classList.toggle("menu-open");
-    menuToggle.setAttribute("aria-expanded", String(isOpen));
-  });
-  menuLinks.forEach((link) => link.addEventListener("click", () => {
-    nav.classList.remove("menu-open");
-    menuToggle.setAttribute("aria-expanded", "false");
-  }));
-}
-
 (async () => {
   const params = new URLSearchParams(window.location.search);
   cpFilter.value = params.get("cp") || "";
@@ -268,4 +254,3 @@ if (nav && menuToggle) {
 
   applyFilters();
 })();
-

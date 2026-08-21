@@ -130,11 +130,20 @@
     if (Array.isArray(payload)) return payload.flatMap(extractUsers);
     if (!payload || typeof payload !== "object") return [];
 
-    const users = ("mail" in payload || "type" in payload) ? [payload] : [];
+    const users = ("mail" in payload || "type" in payload || "identification" in payload) ? [payload] : [];
     return users.concat(
       ["data", "body", "items", "Items", "records", "results"]
         .flatMap((key) => key in payload ? extractUsers(payload[key]) : [])
     );
+  }
+
+  function getUserEmail(user) {
+    return String(
+      user?.mail
+      || user?.email
+      || user?.identification?.keyPublic
+      || ""
+    ).trim().toLowerCase();
   }
 
   async function getUserAccountType(token, userEmail) {
@@ -143,9 +152,7 @@
 
     const payload = await findUserByMail(token, normalizedEmail);
     const users = extractUsers(payload);
-    const matchingUsers = users.filter(
-      (candidate) => String(candidate.mail || "").trim().toLowerCase() === normalizedEmail
-    );
+    const matchingUsers = users.filter((candidate) => getUserEmail(candidate) === normalizedEmail);
     const candidates = matchingUsers.length
       ? matchingUsers
       : (users.length === 1 ? users : []);
@@ -173,14 +180,12 @@
 
       const normalizedEmail = String(userEmail).trim().toLowerCase();
       const matchingUser = extractUsers(payload).some(
-        (user) => String(user.mail || "").trim().toLowerCase() === normalizedEmail
+        (user) => getUserEmail(user) === normalizedEmail
       );
       return matchingUser ? "valid" : "invalid";
     } catch (error) {
+      if (isAuthenticationRejection(error)) return "invalid";
       console.warn("Impossible de verifier la session pour le moment.");
-      if (error?.response?.status === 401 || error?.response?.status === 403) {
-        return "invalid";
-      }
       return "unknown";
     }
   }
@@ -327,4 +332,3 @@
   };
 
 })(window);
-

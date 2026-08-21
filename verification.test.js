@@ -8,6 +8,7 @@ const ignoredJavaScript = new Set([
   "connect/api.test.js",
   "connect/function.test.js",
   "connect/session.test.js",
+  "home/navigation.test.js",
   "verification.test.js"
 ]);
 
@@ -36,6 +37,65 @@ for (const file of htmlFiles) {
   for (const match of inlineScripts) {
     new vm.Script(match[1], { filename: `${relativePath}#inline-${++index}` });
   }
+}
+
+const headerPages = htmlFiles.filter((file) => fs.readFileSync(file, "utf8").includes("data-site-header"));
+for (const file of headerPages) {
+  const relativePath = path.relative(root, file).replaceAll("\\", "/");
+  const html = fs.readFileSync(file, "utf8");
+  const scriptSources = [...html.matchAll(/<script\b[^>]*src=["']([^"']+)["'][^>]*>/gi)].map((match) => match[1]);
+  const sessionIndex = scriptSources.findIndex((source) => source.endsWith("connect/session.js") || source === "session.js");
+  const navigationIndex = scriptSources.findIndex((source) => source.endsWith("home/navigation.js") || source === "navigation.js");
+
+  assert.ok(sessionIndex >= 0, `${relativePath} doit charger le gestionnaire de session.`);
+  assert.ok(navigationIndex > sessionIndex, `${relativePath} doit charger session.js avant navigation.js.`);
+  assert.match(html, /home\/navigation\.css|navigation\.css/, `${relativePath} doit charger le style du menu partagé.`);
+}
+
+const navigationSource = fs.readFileSync(path.join(root, "home/navigation.js"), "utf8");
+assert.match(navigationSource, /AuthSession\?\.get/, "Le menu doit utiliser le gestionnaire de session commun.");
+assert.match(navigationSource, /services\/index\.html/, "Le menu doit pointer vers la page Services.");
+assert.doesNotMatch(navigationSource, /inscriptiontest\.html/, "Le menu ne doit plus contenir l’ancien lien Services cassé.");
+assert.doesNotMatch(navigationSource, /localStorage/, "Le menu ne doit pas lire ou supprimer directement la session.");
+
+const duplicateNavigationSources = [
+  "home/script.js",
+  "annonce/scripts.js",
+  "annonces/script.js",
+  "submit/submitindex.html"
+].map((file) => fs.readFileSync(path.join(root, file), "utf8")).join("\n");
+assert.doesNotMatch(
+  duplicateNavigationSources,
+  /menuToggle\.addEventListener|querySelector\(["']\.nav["']\)/,
+  "La gestion du menu mobile doit rester centralisée dans home/navigation.js."
+);
+
+const pageStyleSources = [
+  "home/styles.css",
+  "annonce/styles.css",
+  "annonces/styles.css",
+  "submit/submitindex.html"
+].map((file) => fs.readFileSync(path.join(root, file), "utf8")).join("\n");
+assert.doesNotMatch(
+  pageStyleSources,
+  /nav-right a:not\(|btn-primary span:last-child|\.nav\.menu-open \.menu/,
+  "Les pages ne doivent plus masquer ou redéfinir les actions du menu mobile."
+);
+
+const servicesPageSource = fs.readFileSync(path.join(root, "services/index.html"), "utf8");
+const announcementsPageSource = fs.readFileSync(path.join(root, "annonces/index.html"), "utf8");
+for (const category of [
+  "paysagiste",
+  "nettoyage",
+  "assistance-administrative",
+  "cours-a-domicile",
+  "coach-sportif",
+  "bricolage",
+  "garde-enfants",
+  "aide-a-domicile"
+]) {
+  assert.match(servicesPageSource, new RegExp(`activite=${category}`), `La page Services doit proposer ${category}.`);
+  assert.match(announcementsPageSource, new RegExp(`value=["']${category}["']`), `Le filtre des annonces doit accepter ${category}.`);
 }
 
 const authenticationSources = [
@@ -81,4 +141,3 @@ assert.match(professionalAreaSource, /createQuoteResponse/, "Le professionnel do
 assert.match(customerAreaSource, /findQuoteResponses/, "Le particulier doit pouvoir consulter la réponse du professionnel.");
 
 console.log("Vérification globale des scripts réussie.");
-

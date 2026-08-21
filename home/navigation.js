@@ -1,40 +1,63 @@
 (function () {
   const currentScript = document.currentScript;
   const defaultRoot = currentScript?.src ? new URL("../", currentScript.src).href : "../";
+  const personalSpacePaths = {
+    pro: "espacePersonnel/index.html",
+    customer: "espaceParticulier/index.html"
+  };
 
   function getSession() {
     try {
-      const session = JSON.parse(window.localStorage.getItem("authSession") || "null");
-      if (!session?.token || !session?.email) return null;
-      if (session.expiresAt && Date.now() >= Number(session.expiresAt)) return null;
-      return session;
+      return window.AuthSession?.get?.() || null;
     } catch {
       return null;
     }
   }
 
-  function clearSession() {
-    ["authSession", "token", "userEmail", "accountType"].forEach((key) => {
-      window.localStorage.removeItem(key);
-    });
+  function getAccountType(session) {
+    try {
+      return window.AuthSession?.normalizeAccountType?.(session?.accountType) || "";
+    } catch {
+      return "";
+    }
   }
 
-  document.querySelectorAll("[data-site-header]").forEach((host) => {
+  function setMenuOpen(nav, toggle, open) {
+    nav.classList.toggle("menu-open", open);
+    toggle.setAttribute("aria-expanded", String(open));
+    const label = toggle.querySelector(".sr-only");
+    if (label) label.textContent = open ? "Fermer le menu" : "Ouvrir le menu";
+  }
+
+  function samePage(firstUrl, secondUrl) {
+    const normalizePath = (url) => new URL(url, document.baseURI).pathname
+      .replace(/index\.html$/, "")
+      .replace(/\/$/, "");
+    return normalizePath(firstUrl) === normalizePath(secondUrl);
+  }
+
+  document.querySelectorAll("[data-site-header]").forEach((host, index) => {
     const root = new URL(host.dataset.root || defaultRoot, document.baseURI);
     const href = (path) => new URL(path, root).href;
     const session = getSession();
-    const personalSpacePath = session?.accountType === "customer"
-      ? "espaceParticulier/index.html"
-      : "espacePersonnel/index.html";
-    const accountLinks = session
+    const accountType = getAccountType(session);
+    const personalSpacePath = personalSpacePaths[accountType];
+    const authenticated = Boolean(session?.token && session?.email && personalSpacePath);
+    const menuId = `mainMenu-${index + 1}`;
+
+    const accountLinks = authenticated
       ? `
           <a class="btn-primary" href="${href(personalSpacePath)}">
             <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4zm0 2c-4.42 0-8 2-8 4.5V21h16v-2.5C20 16 16.42 14 12 14z"/></svg>
             <span>Mon espace</span>
           </a>
-          <a href="${href("index.html")}" data-logout><span>Déconnexion</span></a>`
+          <button class="nav-action nav-logout" type="button" data-logout>Déconnexion</button>`
       : `
-          ${accountLinks}`;
+          <a href="${href("connect/index.html")}">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4zm0 2c-4.42 0-8 2-8 4.5V21h16v-2.5C20 16 16.42 14 12 14z"/></svg>
+            <span>Connexion</span>
+          </a>
+          <a class="btn-primary" href="${href("submit/submitindex.html")}"><span>Inscription</span></a>`;
 
     host.classList.add("site-header");
     host.innerHTML = `
@@ -44,37 +67,56 @@
             <svg class="pin" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2c-3.86 0-7 3.14-7 7 0 5.25 7 13 7 13s7-7.75 7-13c0-3.86-3.14-7-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/></svg>
             <span>Accueil</span>
           </a>
-          <nav class="menu" id="mainMenu" aria-label="Menu principal">
-            <a href="${href("inscriptiontest.html")}">Services</a>
+          <nav class="menu" id="${menuId}" aria-label="Menu principal">
+            <a href="${href("services/index.html")}">Services</a>
             <a href="${href("annonces/index.html")}">Annonces</a>
             <a href="${href("contact/index.html")}">Contact</a>
           </nav>
         </div>
-        <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="mainMenu">
+        <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="${menuId}">
           <span class="sr-only">Ouvrir le menu</span>
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18v2H3V6zm0 5h18v2H3v-2zm0 5h18v2H3v-2z"/></svg>
         </button>
-        <div class="nav-right">
-          <a href="${href("connect/index.html")}">
-            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4zm0 2c-4.42 0-8 2-8 4.5V21h16v-2.5C20 16 16.42 14 12 14z"/></svg>
-            <span>Connexion</span>
-          </a>
-          <a class="btn-primary" href="${href("submit/submitindex.html")}"><span aria-hidden="true">+</span><span>Inscription</span></a>
-        </div>
+        <div class="nav-right">${accountLinks}</div>
       </header>`;
 
     const nav = host.querySelector(".nav");
     const toggle = host.querySelector(".menu-toggle");
-    toggle.addEventListener("click", () => {
-      const open = nav.classList.toggle("menu-open");
-      toggle.setAttribute("aria-expanded", String(open));
+    if (!nav || !toggle) return;
+
+    host.querySelectorAll("a[href]").forEach((link) => {
+      if (samePage(link.href, window.location.href)) link.setAttribute("aria-current", "page");
     });
+
+    toggle.addEventListener("click", () => {
+      setMenuOpen(nav, toggle, !nav.classList.contains("menu-open"));
+    });
+
     host.querySelectorAll(".menu a").forEach((link) => link.addEventListener("click", () => {
-      nav.classList.remove("menu-open");
-      toggle.setAttribute("aria-expanded", "false");
+      setMenuOpen(nav, toggle, false);
     }));
+
+    document.addEventListener("click", (event) => {
+      if (!host.contains(event.target)) setMenuOpen(nav, toggle, false);
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && nav.classList.contains("menu-open")) {
+        setMenuOpen(nav, toggle, false);
+        toggle.focus();
+      }
+    });
+
+    window.addEventListener("resize", () => {
+      if (window.innerWidth > 720) setMenuOpen(nav, toggle, false);
+    });
+
     host.querySelector("[data-logout]")?.addEventListener("click", () => {
-      clearSession();
+      try {
+        window.AuthSession?.clear?.();
+      } finally {
+        window.location.replace(href("index.html"));
+      }
     });
   });
 })();

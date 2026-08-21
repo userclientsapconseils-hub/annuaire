@@ -31,53 +31,6 @@ body{
     linear-gradient(to bottom, rgba(10,14,24,.7), rgba(10,14,24,.9)),
     url("https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=2400&q=80") center/cover;
 }
-.nav{
-  height:var(--navH);
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  padding:0 28px;
-  color:white;
-}
-.nav-left,.nav-right{display:flex;align-items:center;gap:22px}
-.brand{display:flex;align-items:center;gap:10px;font-weight:700;white-space:nowrap}
-.brand .pin{width:18px;height:18px;fill:var(--red)}
-.brand a{color:#fff;text-decoration:none}
-.menu{display:flex;align-items:center;gap:18px;margin-left:18px}
-.menu a{color:rgba(255,255,255,.85);text-decoration:none;font-size:14px}
-.menu-toggle{
-  display:none;
-  border:1px solid rgba(255,255,255,.35);
-  background:rgba(10,14,24,.35);
-  color:#fff;
-  width:40px;
-  height:40px;
-  border-radius:10px;
-  align-items:center;
-  justify-content:center;
-  cursor:pointer;
-}
-.menu-toggle svg{width:20px;height:20px;fill:currentColor}
-.sr-only{
-  position:absolute;
-  width:1px;
-  height:1px;
-  padding:0;
-  margin:-1px;
-  overflow:hidden;
-  clip:rect(0,0,0,0);
-  white-space:nowrap;
-  border:0;
-}
-.nav-right a{
-  color:rgba(255,255,255,.85);
-  text-decoration:none;
-  font-size:14px;
-  display:flex;
-  align-items:center;
-  gap:8px;
-}
-.icon{width:18px;height:18px;display:block}
 .container{
   width:min(1000px,92vw);
   margin:0 auto;
@@ -183,18 +136,6 @@ textarea{
   padding:10px 14px;
   border-radius:6px;
   cursor:pointer;
-}
-.btn-primary{
-  background:var(--red);
-  color:white;
-  border:none;
-  padding:10px 14px;
-  border-radius:8px;
-  font-weight:600;
-  cursor:pointer;
-  display:flex;
-  align-items:center;
-  gap:8px;
 }
 .actions{
   display:flex;
@@ -329,24 +270,6 @@ textarea{
 .account-type strong{display:block;font-size:18px;margin-bottom:6px}.account-type span{color:#4b5563}
 
 @media (max-width:900px){
-  .nav{padding:0 16px}
-  .menu-toggle{display:flex}
-  .menu{display:none}
-  .nav.menu-open .menu{
-    display:flex;
-    position:absolute;
-    top:calc(var(--navH) - 8px);
-    left:16px;
-    right:16px;
-    background:rgba(10,14,24,.95);
-    border:1px solid rgba(255,255,255,.2);
-    border-radius:12px;
-    flex-direction:column;
-    align-items:flex-start;
-    padding:12px 14px;
-    margin:0;
-    gap:10px;
-  }
   .container{padding:28px 0 56px}
 }
 
@@ -369,9 +292,6 @@ textarea{
   .stepper .line{width:72px}
   .actions{justify-content:stretch}
   .actions .btn-form{flex:1 1 100%}
-  .nav-right a:not(.btn-primary){display:none}
-  .btn-primary span:last-child{display:none}
-  .btn-primary{min-width:40px;justify-content:center}
 }
 
 @media (max-width:420px){
@@ -1241,31 +1161,6 @@ textarea{
 
   previewBtn?.addEventListener("click", viewSavedAdPage);
   submitAdBtn?.addEventListener("click", submitAd);
-
-  const nav = document.querySelector(".nav");
-  const menuToggle = document.querySelector(".menu-toggle");
-  const menuLinks = document.querySelectorAll(".menu a");
-
-  if (nav && menuToggle) {
-    menuToggle.addEventListener("click", () => {
-      const isOpen = nav.classList.toggle("menu-open");
-      menuToggle.setAttribute("aria-expanded", String(isOpen));
-    });
-
-    menuLinks.forEach((link) => {
-      link.addEventListener("click", () => {
-        nav.classList.remove("menu-open");
-        menuToggle.setAttribute("aria-expanded", "false");
-      });
-    });
-
-    window.addEventListener("resize", () => {
-      if (window.innerWidth > 900) {
-        nav.classList.remove("menu-open");
-        menuToggle.setAttribute("aria-expanded", "false");
-      }
-    });
-  }
 
   const savedSession = AuthSession.get();
   const savedEmail = savedSession?.email || "";
