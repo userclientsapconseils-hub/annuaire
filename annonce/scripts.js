@@ -11,7 +11,7 @@ function parseApiData(payload) {
 }
 
 const API_COLLECTION_KEYS = ['data', 'body', 'items', 'Items', 'records', 'results', 'offers', 'annonces'];
-const OFFER_FIELD_KEYS = ['id', '_id', 'entreprise', 'activite', 'prestation', 'prestations', 'description', 'cp', 'ville', 'nom', 'prenom', 'mail'];
+const OFFER_FIELD_KEYS = ['id', '_id', 'entreprise', 'activite', 'prestation', 'prestations', 'description', 'cp', 'ville', 'nom', 'prenom', 'mail', 'rayonActiviteKm', 'photoUrl'];
 
 function hasOfferShape(value) {
   return value
@@ -80,6 +80,23 @@ function normalizePrestations(prestations) {
   return [];
 }
 
+function normalizeRayonActivite(value) {
+  if (value === '' || value === null || value === undefined) return null;
+  const radius = Math.round(Number(value));
+  return Number.isFinite(radius) && radius >= 0 && radius <= 100 ? radius : null;
+}
+
+function normalizePhotoUrl(value) {
+  const photoUrl = String(value || '').trim();
+  if (!photoUrl) return '';
+  try {
+    const parsed = new URL(photoUrl, window.location.href);
+    return ['http:', 'https:'].includes(parsed.protocol) ? parsed.href : '';
+  } catch {
+    return '';
+  }
+}
+
 function getApiRecordId(record) {
   if (!record || typeof record !== 'object') return '';
   return String(record.id || record._id || '').trim();
@@ -109,6 +126,8 @@ function mapOffer(rawOffer, index = 0) {
     adresse2: String(rawOffer?.adresse2 || '').trim(),
     userNumber: getUserNumber(rawOffer?.userNumber),
     mail,
+    rayonActiviteKm: normalizeRayonActivite(rawOffer?.rayonActiviteKm),
+    photoUrl: normalizePhotoUrl(rawOffer?.photoUrl),
     description: String(rawOffer?.description || '').trim()
   };
 }
@@ -167,6 +186,7 @@ function renderOffer(offer) {
     ['Code postal', offer.cp || '-'],
     ['Ville', offer.ville || '-'],
     ['Zone couverte', zone],
+    ['Rayon d’intervention', offer.rayonActiviteKm !== null ? `${offer.rayonActiviteKm} km` : '-'],
     ['Adresse', [offer.adresse1, offer.adresse2].filter(Boolean).join(', ') || '-'],
     ['Email', offer.mail || '-']
   ];
@@ -176,8 +196,15 @@ function renderOffer(offer) {
   document.getElementById('offerMeta').innerHTML = [
     offer.cp || offer.ville ? `<span class="pill">Zone : ${escapeHtml([offer.cp, offer.ville].filter(Boolean).join(' '))}</span>` : '',
     offer.activite ? `<span class="pill">Activité : ${escapeHtml(offer.activite)}</span>` : '',
+    offer.rayonActiviteKm !== null ? `<span class="pill">Déplacement : ${offer.rayonActiviteKm} km</span>` : '',
     firstPrice ? `<span class="pill">À partir de ${escapeHtml(firstPrice)}€ HT/h</span>` : ''
   ].filter(Boolean).join('');
+  const gallery = document.querySelector('.gallery');
+  if (gallery && offer.photoUrl) {
+    gallery.style.backgroundImage = `linear-gradient(rgba(10,14,24,.12),rgba(10,14,24,.12)), url("${offer.photoUrl}")`;
+    gallery.style.backgroundPosition = 'center';
+    gallery.style.backgroundSize = 'cover';
+  }
   document.getElementById('offerDescription').textContent = description;
   document.getElementById('offerServices').innerHTML = offer.prestations.length
     ? offer.prestations.map((item) => `<li>${escapeHtml(item.prestation || 'Prestation')}${item.tarifHt ? ` — ${escapeHtml(item.tarifHt)}€ HT/h` : ''}</li>`).join('')
