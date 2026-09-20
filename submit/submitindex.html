@@ -69,6 +69,22 @@ textarea{
   min-height:100px;
   resize:vertical;
 }
+.range-heading{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+}
+.range-heading label{margin-bottom:0}
+.range-value{
+  color:var(--red);
+  font-weight:800;
+  white-space:nowrap;
+}
+input[type="range"]{
+  padding:0;
+  accent-color:var(--red);
+}
 .services-table-wrap{
   overflow-x:auto;
 }
@@ -441,6 +457,15 @@ textarea{
               </div>
 
               <div class="form-group full">
+                <div class="range-heading">
+                  <label for="rayonActiviteKm">Rayon d’intervention</label>
+                  <output id="rayonActiviteValue" class="range-value" for="rayonActiviteKm">50 km</output>
+                </div>
+                <input id="rayonActiviteKm" name="rayonActiviteKm" type="range" min="0" max="100" step="1" value="50">
+                <small>Distance maximale autour de votre ville dans laquelle vous acceptez de vous déplacer.</small>
+              </div>
+
+              <div class="form-group full">
                 <label for="description">Description</label>
                 <textarea id="description" name="description" placeholder="Décrivez votre entreprise, vos prestations et votre zone d’intervention"></textarea>
               </div>
@@ -506,6 +531,11 @@ textarea{
           </div>
 
           <div class="preview-block">
+            <strong>Rayon d’intervention</strong>
+            <div id="previewRayonActivite">50 km</div>
+          </div>
+
+          <div class="preview-block">
             <strong>Description</strong>
             <div id="previewDescription">-</div>
           </div>
@@ -536,6 +566,8 @@ textarea{
   const submitAdBtn = document.getElementById("submitAdBtn");
   const addPrestationBtn = document.getElementById("addPrestationBtn");
   const prestationsBody = document.getElementById("prestationsBody");
+  const rayonActiviteField = document.getElementById("rayonActiviteKm");
+  const rayonActiviteValue = document.getElementById("rayonActiviteValue");
 
   const registerEmail = document.getElementById("registerEmail");
   const registerPassword = document.getElementById("registerPassword");
@@ -558,6 +590,7 @@ textarea{
     "ville",
     "adresse1",
     "adresse2",
+    "rayonActiviteKm",
     "description"
   ];
 
@@ -571,6 +604,17 @@ textarea{
   function hideStatus() {
     statusBox.className = "status";
     statusBox.textContent = "";
+  }
+
+  function normalizeRayonActivite(value) {
+    const radius = Math.round(Number(value));
+    return Number.isFinite(radius) ? Math.min(100, Math.max(0, radius)) : 50;
+  }
+
+  function updateRayonActiviteDisplay() {
+    const radius = normalizeRayonActivite(rayonActiviteField.value);
+    rayonActiviteField.value = String(radius);
+    rayonActiviteValue.textContent = `${radius} km`;
   }
 
   function enterAdManagementMode() {
@@ -691,6 +735,7 @@ textarea{
       ville: document.getElementById("ville").value.trim(),
       adresse1: document.getElementById("adresse1").value.trim(),
       adresse2: document.getElementById("adresse2").value.trim(),
+      rayonActiviteKm: normalizeRayonActivite(rayonActiviteField.value),
       description: document.getElementById("description").value.trim()
     };
   }
@@ -716,7 +761,9 @@ textarea{
       document.getElementById("ville").value = draft.ville || "";
       document.getElementById("adresse1").value = draft.adresse1 || draft.adresse || "";
       document.getElementById("adresse2").value = draft.adresse2 || "";
+      rayonActiviteField.value = String(normalizeRayonActivite(draft.rayonActiviteKm));
       document.getElementById("description").value = draft.description || "";
+      updateRayonActiviteDisplay();
 
       return true;
     } catch (error) {
@@ -831,6 +878,7 @@ textarea{
     if (!/^[0-9]{5}$/.test(adData.cp)) return "Le code postal doit contenir exactement 5 chiffres.";
     if (!adData.ville) return "Veuillez renseigner votre ville.";
     if (!adData.adresse1) return "Veuillez renseigner l’adresse 1.";
+    if (!Number.isInteger(adData.rayonActiviteKm) || adData.rayonActiviteKm < 0 || adData.rayonActiviteKm > 100) return "Le rayon d’intervention doit être compris entre 0 et 100 km.";
     if (!adData.description) return "Veuillez renseigner la description.";
     return null;
   }
@@ -959,6 +1007,7 @@ textarea{
     document.getElementById("previewVille").textContent = adData.ville || "-";
     document.getElementById("previewAdresse1").textContent = adData.adresse1 || "-";
     document.getElementById("previewAdresse2").textContent = adData.adresse2 || "-";
+    document.getElementById("previewRayonActivite").textContent = `${adData.rayonActiviteKm} km`;
     document.getElementById("previewDescription").textContent = adData.description || "-";
 
     previewBox.classList.add("show");
@@ -973,6 +1022,14 @@ textarea{
       field.addEventListener("input", saveDraft);
       field.addEventListener("change", saveDraft);
     });
+  }
+
+  function bindRayonActivite() {
+    rayonActiviteField.addEventListener("input", () => {
+      updateRayonActiviteDisplay();
+      saveDraft();
+    });
+    updateRayonActiviteDisplay();
   }
 
   function bindPostalCodeFormatter() {
@@ -1029,6 +1086,7 @@ textarea{
       adresse1: String(rawAd.adresse1 || rawAd.adresse || "").trim(),
       adresse2: String(rawAd.adresse2 || "").trim(),
       mail,
+      rayonActiviteKm: normalizeRayonActivite(rawAd.rayonActiviteKm),
       description: String(rawAd.description || "").trim()
     };
   }
@@ -1044,6 +1102,8 @@ textarea{
     document.getElementById("ville").value = ad.ville || "";
     document.getElementById("adresse1").value = ad.adresse1 || "";
     document.getElementById("adresse2").value = ad.adresse2 || "";
+    rayonActiviteField.value = String(normalizeRayonActivite(ad.rayonActiviteKm));
+    updateRayonActiviteDisplay();
     document.getElementById("description").value = ad.description || "";
   }
 
@@ -1189,6 +1249,7 @@ textarea{
   }
 
   bindDraftAutosave();
+  bindRayonActivite();
   bindPostalCodeFormatter();
   setSubmitButtonLabel();
   render();

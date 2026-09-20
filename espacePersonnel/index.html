@@ -269,7 +269,7 @@
     }
 
     const API_COLLECTION_KEYS = ["data", "body", "items", "Items", "records", "results", "offers", "annonces"];
-    const OFFER_FIELD_KEYS = ["entreprise", "activite", "prestation", "prestations", "description", "cp", "ville", "nom", "prenom", "mail"];
+    const OFFER_FIELD_KEYS = ["entreprise", "activite", "prestation", "prestations", "description", "cp", "ville", "nom", "prenom", "mail", "rayonActiviteKm"];
 
     function hasOfferShape(value) {
       return value
@@ -312,6 +312,12 @@
       return String(value || "").trim().toLowerCase();
     }
 
+    function normalizeRayonActivite(value) {
+      if (value === "" || value === null || value === undefined) return null;
+      const radius = Math.round(Number(value));
+      return Number.isFinite(radius) && radius >= 0 && radius <= 100 ? radius : null;
+    }
+
     function normalizePrestations(prestations) {
       if (Array.isArray(prestations)) {
         return prestations.map((item) => ({
@@ -344,6 +350,7 @@
         ville: String(rawOffer.ville || "").trim(),
         adresse1: String(rawOffer.adresse1 || rawOffer.adresse || "").trim(),
         adresse2: String(rawOffer.adresse2 || "").trim(),
+        rayonActiviteKm: normalizeRayonActivite(rawOffer.rayonActiviteKm),
         description: String(rawOffer.description || "").trim(),
         mail: String(rawOffer.mail || "").trim()
       };
@@ -393,6 +400,7 @@
           ${offer.activite ? `<span class="offer-pill">${escapeHtml(offer.activite)}</span>` : ""}
           ${location ? `<span class="offer-pill">${escapeHtml(location)}</span>` : ""}
           ${address ? `<span class="offer-pill">${escapeHtml(address)}</span>` : ""}
+          ${offer.rayonActiviteKm !== null ? `<span class="offer-pill">Déplacement : ${offer.rayonActiviteKm} km</span>` : ""}
         </div>
         <p class="offer-description">${escapeHtml(offer.description || "Aucune description renseignée.")}</p>
         ${services ? `<strong>Prestations</strong><ul class="offer-services">${services}</ul>` : ""}
