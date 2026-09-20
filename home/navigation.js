@@ -70,6 +70,7 @@
           <nav class="menu" id="${menuId}" aria-label="Menu principal">
             <a href="${href("services/index.html")}">Services</a>
             <a href="${href("annonces/index.html")}">Annonces</a>
+            <a href="${href("offres/index.html")}">Offres</a>
             <a href="${href("contact/index.html")}">Contact</a>
           </nav>
         </div>
