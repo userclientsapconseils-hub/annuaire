@@ -11,7 +11,7 @@ function parseApiData(payload) {
 }
 
 const API_COLLECTION_KEYS = ['data', 'body', 'items', 'Items', 'records', 'results', 'offers', 'annonces'];
-const OFFER_FIELD_KEYS = ['id', '_id', 'entreprise', 'activite', 'prestation', 'prestations', 'description', 'cp', 'ville', 'nom', 'prenom', 'mail'];
+const OFFER_FIELD_KEYS = ['id', '_id', 'entreprise', 'activite', 'prestation', 'prestations', 'description', 'cp', 'ville', 'nom', 'prenom', 'mail', 'rayonActiviteKm'];
 
 function hasOfferShape(value) {
   return value
@@ -80,6 +80,12 @@ function normalizePrestations(prestations) {
   return [];
 }
 
+function normalizeRayonActivite(value) {
+  if (value === '' || value === null || value === undefined) return null;
+  const radius = Math.round(Number(value));
+  return Number.isFinite(radius) && radius >= 0 && radius <= 100 ? radius : null;
+}
+
 function getApiRecordId(record) {
   if (!record || typeof record !== 'object') return '';
   return String(record.id || record._id || '').trim();
@@ -109,6 +115,7 @@ function mapOffer(rawOffer, index = 0) {
     adresse2: String(rawOffer?.adresse2 || '').trim(),
     userNumber: getUserNumber(rawOffer?.userNumber),
     mail,
+    rayonActiviteKm: normalizeRayonActivite(rawOffer?.rayonActiviteKm),
     description: String(rawOffer?.description || '').trim()
   };
 }
@@ -167,6 +174,7 @@ function renderOffer(offer) {
     ['Code postal', offer.cp || '-'],
     ['Ville', offer.ville || '-'],
     ['Zone couverte', zone],
+    ['Rayon d’intervention', offer.rayonActiviteKm !== null ? `${offer.rayonActiviteKm} km` : '-'],
     ['Adresse', [offer.adresse1, offer.adresse2].filter(Boolean).join(', ') || '-'],
     ['Email', offer.mail || '-']
   ];
@@ -176,6 +184,7 @@ function renderOffer(offer) {
   document.getElementById('offerMeta').innerHTML = [
     offer.cp || offer.ville ? `<span class="pill">Zone : ${escapeHtml([offer.cp, offer.ville].filter(Boolean).join(' '))}</span>` : '',
     offer.activite ? `<span class="pill">Activité : ${escapeHtml(offer.activite)}</span>` : '',
+    offer.rayonActiviteKm !== null ? `<span class="pill">Déplacement : ${offer.rayonActiviteKm} km</span>` : '',
     firstPrice ? `<span class="pill">À partir de ${escapeHtml(firstPrice)}€ HT/h</span>` : ''
   ].filter(Boolean).join('');
   document.getElementById('offerDescription').textContent = description;
