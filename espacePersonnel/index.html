@@ -91,6 +91,59 @@
       color:#9a3412;
       border:1px solid #fed7aa;
     }
+    .subscription-card{
+      margin-top:24px;
+      padding:20px;
+      border:1px solid #fecaca;
+      border-radius:14px;
+      background:#fff7f7;
+    }
+    .subscription-card h2{
+      margin:0 0 12px;
+      font-size:20px;
+    }
+    .subscription-summary{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:18px;
+      flex-wrap:wrap;
+    }
+    .subscription-name{
+      margin:0;
+      font-size:24px;
+      font-weight:800;
+    }
+    .subscription-price{
+      margin:5px 0 0;
+      color:#4b5563;
+    }
+    .subscription-status{
+      display:inline-flex;
+      align-items:center;
+      padding:6px 10px;
+      border-radius:999px;
+      background:#dcfce7;
+      color:#166534;
+      font-size:12px;
+      font-weight:800;
+    }
+    .subscription-actions{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top:18px;
+    }
+    .subscription-actions button:disabled{
+      background:#d1d5db;
+      color:#4b5563;
+      cursor:not-allowed;
+    }
+    .subscription-help{
+      margin:12px 0 0;
+      color:#6b7280;
+      font-size:13px;
+    }
     .api-offer{
       margin-top:24px;
       padding:20px;
@@ -200,6 +253,22 @@
         <a id="adActionBtn" class="btn-link" href="../submit/submitindex.html?fromDashboard=1">Créer mon annonce</a>
       </div>
 
+      <section class="subscription-card" aria-labelledby="subscriptionTitle">
+        <h2 id="subscriptionTitle">Mon offre</h2>
+        <div class="subscription-summary">
+          <div>
+            <p id="subscriptionName" class="subscription-name">Gratuite</p>
+            <p id="subscriptionPrice" class="subscription-price">0 € · sans abonnement</p>
+          </div>
+          <span id="subscriptionStatus" class="subscription-status">Offre active</span>
+        </div>
+        <div class="subscription-actions">
+          <a class="btn-link" href="../offres/index.html">Comparer les offres</a>
+          <button id="manageSubscriptionBtn" type="button" disabled>Gérer mon abonnement</button>
+        </div>
+        <p id="subscriptionHelp" class="subscription-help">La gestion des abonnements sera disponible après le raccordement sécurisé de l’API à Stripe.</p>
+      </section>
+
       <section class="api-offer" aria-labelledby="apiOfferTitle">
         <h2 id="apiOfferTitle">Mon annonce enregistrée</h2>
         <p id="apiOfferStatus" class="status show info">Chargement de votre annonce liée à votre adresse mail...</p>
@@ -223,8 +292,14 @@
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <script src="../connect/api.js"></script>
   <script src="../connect/session.js"></script>
+  <script src="../billing/plans.js"></script>
   <script>
     const userEmailEl = document.getElementById("userEmail");
+    const subscriptionName = document.getElementById("subscriptionName");
+    const subscriptionPrice = document.getElementById("subscriptionPrice");
+    const subscriptionStatus = document.getElementById("subscriptionStatus");
+    const subscriptionHelp = document.getElementById("subscriptionHelp");
+    const manageSubscriptionBtn = document.getElementById("manageSubscriptionBtn");
     const createAdActions = document.getElementById("createAdActions");
     const adActionBtn = document.getElementById("adActionBtn");
     const draftStatus = document.getElementById("draftStatus");
@@ -234,6 +309,33 @@
     const quoteRequestsTable = document.getElementById("quoteRequestsTable");
     const pendingQuoteCount = document.getElementById("pendingQuoteCount");
     let currentQuoteRequests = [];
+
+    const subscriptionStatusLabels = {
+      none: "Offre active",
+      incomplete: "Paiement incomplet",
+      trialing: "Période d’essai",
+      active: "Abonnement actif",
+      past_due: "Paiement à régulariser",
+      canceled: "Abonnement résilié",
+      unpaid: "Paiement impayé"
+    };
+
+    function renderSubscription(subscriptionPayload) {
+      const subscription = BillingPlans.normalizeSubscription(subscriptionPayload);
+      const plan = subscription.accessPlanDetails;
+
+      subscriptionName.textContent = plan.label;
+      subscriptionPrice.textContent = plan.monthlyPriceHt === 0
+        ? "0 € · sans abonnement"
+        : BillingPlans.formatMonthlyPrice(plan.monthlyPriceHt);
+      subscriptionStatus.textContent = subscriptionStatusLabels[subscription.status] || "État indisponible";
+      subscriptionHelp.textContent = subscription.status === "none"
+        ? "La gestion des abonnements sera disponible après le raccordement sécurisé de l’API à Stripe."
+        : "Les droits affichés sont ceux confirmés par l’API.";
+      manageSubscriptionBtn.disabled = true;
+    }
+
+    window.renderProfessionalSubscription = renderSubscription;
 
     function getStoredSession() {
       return AuthSession.get();
@@ -640,6 +742,7 @@
       adActionBtn.style.pointerEvents = "";
       adActionBtn.style.opacity = "";
       refreshDraftUI();
+      renderSubscription(null);
       loadApiOffer(token, userEmail);
       loadQuoteRequests(token);
     }

@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Offres professionnelles</title>
+  <link rel="stylesheet" href="../home/theme.css">
+  <link rel="stylesheet" href="../home/navigation.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div data-site-header></div>
+
+  <main class="plans-page">
+    <section class="plans-hero" aria-labelledby="plansTitle">
+      <p class="eyebrow">Offres professionnelles</p>
+      <h1 id="plansTitle">Choisissez la formule adaptée à votre activité</h1>
+      <p class="plans-intro">Des offres mensuelles simples, affichées hors taxes. La formule gratuite reste disponible sans abonnement.</p>
+      <div id="currentPlanMessage" class="current-plan-message" aria-live="polite"></div>
+    </section>
+
+    <section class="plans-grid" id="plansGrid" aria-label="Comparaison des offres"></section>
+
+    <aside class="integration-note">
+      <strong>Paiement en préparation</strong>
+      <p>Les offres Standard et Premium seront activées lorsque l’intégration sécurisée avec Stripe et l’API sera disponible. Aucun paiement ne peut encore être lancé depuis cette page.</p>
+    </aside>
+  </main>
+
+  <script src="../connect/session.js"></script>
+  <script src="../billing/plans.js"></script>
+  <script src="script.js"></script>
+  <script src="../home/navigation.js"></script>
+</body>
+</html>
