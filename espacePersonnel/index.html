@@ -144,6 +144,7 @@
     .offer-services li{
       margin-bottom:6px;
     }
+    .offer-photo{width:100%;max-height:260px;object-fit:cover;border-radius:14px;margin-bottom:16px;border:1px solid #e5e7eb}
     .quote-requests{margin-top:24px;padding:20px;border:1px solid #e5e7eb;border-radius:14px;background:#f9fafb}
     .quote-requests h2{margin:0 0 8px;font-size:20px}
     .quote-requests-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
@@ -269,7 +270,7 @@
     }
 
     const API_COLLECTION_KEYS = ["data", "body", "items", "Items", "records", "results", "offers", "annonces"];
-    const OFFER_FIELD_KEYS = ["entreprise", "activite", "prestation", "prestations", "description", "cp", "ville", "nom", "prenom", "mail"];
+    const OFFER_FIELD_KEYS = ["entreprise", "activite", "prestation", "prestations", "description", "cp", "ville", "nom", "prenom", "mail", "rayonActiviteKm", "photoUrl"];
 
     function hasOfferShape(value) {
       return value
@@ -312,6 +313,23 @@
       return String(value || "").trim().toLowerCase();
     }
 
+    function normalizeRayonActivite(value) {
+      if (value === "" || value === null || value === undefined) return null;
+      const radius = Math.round(Number(value));
+      return Number.isFinite(radius) && radius >= 0 && radius <= 100 ? radius : null;
+    }
+
+    function normalizePhotoUrl(value) {
+      const photoUrl = String(value || "").trim();
+      if (!photoUrl) return "";
+      try {
+        const parsed = new URL(photoUrl, window.location.href);
+        return ["http:", "https:"].includes(parsed.protocol) ? parsed.href : "";
+      } catch {
+        return "";
+      }
+    }
+
     function normalizePrestations(prestations) {
       if (Array.isArray(prestations)) {
         return prestations.map((item) => ({
@@ -344,6 +362,8 @@
         ville: String(rawOffer.ville || "").trim(),
         adresse1: String(rawOffer.adresse1 || rawOffer.adresse || "").trim(),
         adresse2: String(rawOffer.adresse2 || "").trim(),
+        rayonActiviteKm: normalizeRayonActivite(rawOffer.rayonActiviteKm),
+        photoUrl: normalizePhotoUrl(rawOffer.photoUrl),
         description: String(rawOffer.description || "").trim(),
         mail: String(rawOffer.mail || "").trim()
       };
@@ -388,11 +408,13 @@
       }).join("");
 
       apiOfferCard.innerHTML = `
+        ${offer.photoUrl ? `<img class="offer-photo" src="${escapeHtml(offer.photoUrl)}" alt="Photo de l’annonce ${escapeHtml(title)}">` : ""}
         <h3>${escapeHtml(title)}</h3>
         <div class="offer-meta">
           ${offer.activite ? `<span class="offer-pill">${escapeHtml(offer.activite)}</span>` : ""}
           ${location ? `<span class="offer-pill">${escapeHtml(location)}</span>` : ""}
           ${address ? `<span class="offer-pill">${escapeHtml(address)}</span>` : ""}
+          ${offer.rayonActiviteKm !== null ? `<span class="offer-pill">Déplacement : ${offer.rayonActiviteKm} km</span>` : ""}
         </div>
         <p class="offer-description">${escapeHtml(offer.description || "Aucune description renseignée.")}</p>
         ${services ? `<strong>Prestations</strong><ul class="offer-services">${services}</ul>` : ""}
