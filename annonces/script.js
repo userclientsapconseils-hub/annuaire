@@ -16,7 +16,7 @@ function parseApiData(payload) {
 }
 
 const API_COLLECTION_KEYS = ["data", "body", "items", "Items", "records", "results", "offers", "annonces"];
-const OFFER_FIELD_KEYS = ["id", "_id", "entreprise", "activite", "prestation", "prestations", "description", "cp", "ville", "nom", "prenom", "mail"];
+const OFFER_FIELD_KEYS = ["id", "_id", "entreprise", "activite", "prestation", "prestations", "description", "cp", "ville", "nom", "prenom", "mail", "rayonActiviteKm", "photoUrl"];
 
 function hasOfferShape(value) {
   return value
@@ -76,6 +76,23 @@ function normalizePrestations(prestations) {
   return [];
 }
 
+function normalizeRayonActivite(value) {
+  if (value === "" || value === null || value === undefined) return null;
+  const radius = Math.round(Number(value));
+  return Number.isFinite(radius) && radius >= 0 && radius <= 100 ? radius : null;
+}
+
+function normalizePhotoUrl(value) {
+  const photoUrl = String(value || "").trim();
+  if (!photoUrl) return "";
+  try {
+    const parsed = new URL(photoUrl, window.location.href);
+    return ["http:", "https:"].includes(parsed.protocol) ? parsed.href : "";
+  } catch {
+    return "";
+  }
+}
+
 function getApiRecordId(record) {
   if (!record || typeof record !== "object") return "";
   return String(record.id || record._id || "").trim();
@@ -104,6 +121,8 @@ function mapOffer(rawOffer, index = 0) {
     adresse2: String(rawOffer?.adresse2 || "").trim(),
     userNumber: getUserNumber(rawOffer?.userNumber),
     mail,
+    rayonActiviteKm: normalizeRayonActivite(rawOffer?.rayonActiviteKm),
+    photoUrl: normalizePhotoUrl(rawOffer?.photoUrl),
     description: String(rawOffer?.description || "").trim()
   };
 }
@@ -204,10 +223,14 @@ function renderOffers(offers) {
 
     return `
       <a class="ad-card" href="${escapeHtml(buildOfferUrl(offer))}" data-offer-key="${escapeHtml(offer.key)}" aria-label="Voir l'annonce complète : ${escapeHtml(title)}">
+        <div class="ad-card-media">
+          ${offer.photoUrl ? `<img src="${escapeHtml(offer.photoUrl)}" alt="" loading="lazy">` : `<span aria-hidden="true">Photo à venir</span>`}
+        </div>
         <h2>${escapeHtml(title)}</h2>
         <div class="ad-meta">
           ${offer.activite ? `<span class="pill">${escapeHtml(offer.activite)}</span>` : ""}
           ${offer.cp || offer.ville ? `<span class="pill">${escapeHtml([offer.cp, offer.ville].filter(Boolean).join(" "))}</span>` : ""}
+          ${offer.rayonActiviteKm !== null ? `<span class="pill">Déplacement : ${offer.rayonActiviteKm} km</span>` : ""}
         </div>
         <p>${escapeHtml(description).slice(0, 240)}${description.length > 240 ? "…" : ""}</p>
         ${services ? `<ul class="services">${services}</ul>` : ""}
